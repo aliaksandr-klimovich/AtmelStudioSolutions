@@ -5,8 +5,24 @@
 ; Author : Aliaksandr
 ;
 
+.include "tn13adef.inc"
+.list
 
-; Replace with your application code
-start:
-    inc r16
-    rjmp start
+.def temp = R16
+
+.cseg
+.org 0
+
+    ;ldi     temp, RAMEND
+    ;out     SPL, temp
+
+    ldi     temp, (1 << DDB0)
+    out     DDRB, temp
+    ldi     temp, (1 << PORTB0) | (1 << PORTB1)
+    out     PORTB, temp
+
+main:
+    in      temp, PINB
+    lsr     temp
+    out     PORTB, temp
+    rjmp    main

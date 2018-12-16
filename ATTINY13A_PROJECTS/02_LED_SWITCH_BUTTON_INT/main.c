@@ -9,8 +9,22 @@
 
 int main(void)
 {
+	
+	DDRB = (1 << DDB0) | (1 << DDB4);
+	PORTB = (1 << PORTB0) | (1 << PORTB1) | (1 << PORTB2) | (1 << PORTB4);
+	
 	while (1)
 	{
+		if (!(PINB & (1 << PINB1))) {  // if KEY1 is pressed
+			PORTB &= ~(1 << PORTB0);  // enable LED2 on
+			} else {
+			PORTB |= (1 << PORTB0);
+		}
+		if (PINB & (1 << PINB2)) {  // if KEY2 is depressed
+			PORTB &= ~(1 << PORTB4);  // disable LED2 on
+			} else {
+			PORTB |= (1 << PORTB4);
+		}
 	}
 }
 
