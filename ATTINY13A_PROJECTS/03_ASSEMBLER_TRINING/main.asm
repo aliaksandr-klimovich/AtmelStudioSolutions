@@ -13,12 +13,9 @@
 .cseg
 .org 0
 
-    ;ldi     temp, RAMEND
-    ;out     SPL, temp
-
     ldi     temp, (1 << DDB0)
     out     DDRB, temp
-    ldi     temp, (1 << PORTB0) | (1 << PORTB1)
+    ldi     temp, (1 << PORTB1)
     out     PORTB, temp
 
 main:
