@@ -20,6 +20,7 @@
 
 main:
     in      temp, PINB
-    lsr     temp
-    out     PORTB, temp
+    sbrs    temp, PINB1
+    cbi     PORTB, PORTB0
+    sbi     PORTB, PORTB0
     rjmp    main
