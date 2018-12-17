@@ -11,7 +11,7 @@
 unsigned int c = 0;
 
 ISR(TIM0_OVF_vect) {
-	if (++c == 2285 * 2) {  // 2.285[kHz] taken from multimeter
+	if (++c == 2285 * 2) {  // 2.285 [kHz] taken from multimeter
 		PINB = (1 << PINB0);
 		c = 0;
 	}
@@ -19,13 +19,15 @@ ISR(TIM0_OVF_vect) {
 
 int main(void)
 {
-	DDRB = (1 << DDB0);
-	PORTB = (1 << PORTB0);
+    cli();                      // disable interrupts
+    
+	DDRB = (1 << DDB0);         // LED1 as output 
+	PORTB = (1 << PORTB0);      // disable LED1
 	
-	TIMSK0 = (1 << TOIE0);
-	TCCR0B = (1 << CS00);
+	TIMSK0 = (1 << TOIE0);      // enable overflow interrupt
+	TCCR0B = (1 << CS00);       // set timer prescaler (enable timer)
 	
-	sei();
+	sei();                      // enable interrupts
 	
 	while (1)
 	{

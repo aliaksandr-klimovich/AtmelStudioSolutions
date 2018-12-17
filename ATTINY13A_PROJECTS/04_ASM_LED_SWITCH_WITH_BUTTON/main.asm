@@ -12,10 +12,10 @@
 .cseg
 .org 0
 
-    ldi     temp, (1 << DDB0)   ; set LED1 as output, KEY1 as input
-    out     DDRB, temp
-    ldi     temp, (1 << PORTB0) | (1 << PORTB1) ; set LED1 disabled, KEY1 as input pull-up
-    out     PORTB, temp
+    ldi     temp, (1 << DDB0)   ; set LED1 as output
+    out     DDRB, temp          ; and KEY1 as input
+    ldi     temp, (1 << PORTB0) | (1 << PORTB1) ; disable LED1
+    out     PORTB, temp                         ; and pull-up KEY1
 
 main:
     in      temp, PINB      ; read PINB
