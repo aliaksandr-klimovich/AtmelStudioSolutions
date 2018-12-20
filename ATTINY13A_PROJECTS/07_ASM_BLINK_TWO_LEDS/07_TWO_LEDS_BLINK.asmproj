@@ -4,16 +4,16 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectVersion>7.0</ProjectVersion>
     <ToolchainName>com.Atmel.AVRAssembler</ToolchainName>
-    <ProjectGuid>{6ccd2d07-0829-473a-952a-dd6d4e326b6a}</ProjectGuid>
+    <ProjectGuid>{f0163543-14de-4256-8ad7-4ec74aa351a1}</ProjectGuid>
     <avrdeviceseries>none</avrdeviceseries>
     <avrdevice>ATtiny13A</avrdevice>
     <OutputFileName>$(MSBuildProjectName)</OutputFileName>
     <OutputFileExtension>.obj</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
     <Language>ASSEMBLY</Language>
-    <AssemblyName>06_LED_BLINK_BUTTON</AssemblyName>
-    <Name>06_LED_BLINK_BUTTON</Name>
-    <RootNamespace>06_LED_BLINK_BUTTON</RootNamespace>
+    <AssemblyName>07_ASM_BLINK_TWO_LEDS</AssemblyName>
+    <Name>07_TWO_LEDS_BLINK</Name>
+    <RootNamespace>07_ASM_BLINK_TWO_LEDS</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <EntryFile>$(MSBuildProjectDirectory)\main.asm</EntryFile>
     <KeepTimersRunning>true</KeepTimersRunning>

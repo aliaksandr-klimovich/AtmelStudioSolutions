@@ -12,7 +12,7 @@
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
     <Language>ASSEMBLY</Language>
     <AssemblyName>04_ASM_LED_SWITCH_WITH_BUTTON</AssemblyName>
-    <Name>04_ASM_LED_SWITCH_WITH_BUTTON</Name>
+    <Name>04_LED_SWITCH_WITH_BUTTON</Name>
     <RootNamespace>04_ASM_LED_SWITCH_WITH_BUTTON</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <EntryFile>$(MSBuildProjectDirectory)\main.asm</EntryFile>
@@ -65,6 +65,7 @@
         <avrasm.assembler.general.IncludeFile>tn13adef.inc</avrasm.assembler.general.IncludeFile>
       </AvrAssembler>
     </ToolchainSettings>
+    <OutputType>Executable</OutputType>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
