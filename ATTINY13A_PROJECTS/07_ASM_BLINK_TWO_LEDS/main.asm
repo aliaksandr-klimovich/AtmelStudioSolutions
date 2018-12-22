@@ -22,7 +22,7 @@
         out     DDRB, temp
         ldi     temp, (1 << PORTB0) | (1 << PORTB4) | (1 << PORTB1)
         mov     noled, temp
-        out     DDRB, temp
+        out     PORTB, temp
 
         ; Disable comparator
 
