@@ -1,18 +1,21 @@
 ;
-; 011_MUSIC_BOX.asm
+; 012_MUSIC_BOX_REMAKE.asm
 ;
-; Created: 24.12.2018 22:05:47
+; Created: 29.12.2018 12:11:10
 ; Author : Aliaksandr
 ;
 
-.def p_note_h = r12
-.def p_note_l = r13
-.def p_delay_h = r14
-.def p_delay_l = r15
+.def tone_displacement = r10
+.def delay_displacement = r11
 
-.def displacement = r16
+.def ZH_copy = r12
+.def ZL_copy = r13
+.def delay_copy = r14
+.def wd_to_copy = r15
+; ---- ---- ---- ----
+.def idx_tone_clk = r16
 .def tone = r17
-.def note = r18
+;.def ? = r18
 .def temp = r19
 .def wd_reset = r20
 .def wd_to = r21
@@ -24,13 +27,14 @@
 ;.def	XH	= r27
 
 .equ no_clk = 0
-.equ clk1 = (1 << CS00)
+;.equ clk1 = (1 << CS00)
 .equ clk8 = (1 << CS01)
 .equ clk64 = (1 << CS01) | (1 << CS00)
-.equ clk256 = (1 << CS02)
-.equ clk1024 = (1 << CS02) | (1 << CS00)
+;.equ clk256 = (1 << CS02)
+;.equ clk1024 = (1 << CS02) | (1 << CS00)
 
 .equ com_en = (1 << COM0A0) | (1 << WGM01)  ; compare output mode A and CTC
+
 
 .cseg
 .org 0
@@ -49,7 +53,7 @@
 RESET:
         ; ---- ---- SETUP ---- ----
 
-        ; Configure buzzer (connected to LED1), LED2, KEY1, KEY2.
+        ; Configure buzzer (connected to PB0), LED2, KEY1, KEY2.
         ; Buzzer as output, disabled.
         ; LED2 as output, disabled.
         ; KEY1 as input, pull-up.
@@ -59,112 +63,97 @@ RESET:
         ldi     temp, (1 << PORTB4) | (1 << PORTB2) | (1 << PORTB1) | (1 << PORTB0)
         out     PORTB, temp
 
-        ; Set stack pointer to the end of RAM
-        ;ldi     temp, RAMEND
-        ;out     SPL, temp
-
         ; Disable comparator
         ldi     temp, (1 << ACD)
         out     ACSR, temp
 
-        ; Configure WDT
-        ;cli
-        ;wdr
-        ;in      temp, WDTCR
-        ;ori     temp, (1 << WDCE) | (1 << WDE)
-        ;out     WDTCR, temp
-        ;ldi     wd_to, (1 << WDTIE) | (1 << WDP2)
-        ;out     WDTCR, wd_to
-        ;sei
+        ; Set stack pointer to the end of RAM
+        ldi     temp, RAMEND
+        out     SPL, temp
+
+        ldi     zero, 0
+        ldi     ti_com_en, com_en
 
         ; Configure timer
 m1:     out     TCCR0A, zero
         out     TCCR0B, zero
-        ldi     ti_com_en, com_en
 
-        ; Read KEY1
-m2:     in      temp, PINB
-        sbrc    temp, PINB1     ; check KEY1
+m2:     in      temp, PINB      ; read and check KEY1
+        sbrc    temp, PINB1     ;
         rjmp    m2
 
-        ; Read tempo
-        ldi     ZH, high(melody01 * 2)
-        ldi     ZL, low(melody01 * 2)
+        ; Read melody config
+        ldi     ZL, low(melody02 * 2)
+        ldi     ZH, high(melody02 * 2)
+        lpm     delay_displacement, Z+
+        lpm     tone_displacement, Z+
 
-        lpm     p_delay_l, Z+
-        lpm     p_delay_h, Z+
+m3:     lpm     delay, Z+           ; read delay code
 
-m3:     lpm     note, Z+    ; read note
+;        cp      delay, delay_displacement
+;        brsh    sub1
+;        ldi     delay, 0
+;        rjmp    sub2
+;sub1:   sub     delay, delay_displacement
+;sub2:
 
-        cpi     note, 0xFF  ; end of melody
+        lpm     idx_tone_clk, Z+    ; read index of tone / clk
+
+        mov     ZH_copy, ZH  ; store Z
+        mov     ZL_copy, ZL
+
+        cpi     idx_tone_clk, 0xFF  ; end of melody
         breq    m1
 
-        mov     p_note_h, ZH  ; store Z
-        mov     p_note_l, ZL
+        tst     idx_tone_clk        ; if pause
+        brne    m4
+        out     TCCR0A, zero
+        out     TCCR0B, zero
+        rjmp    m5
 
-        mov     displacement, note
-        andi    displacement, 0b00011111    ; extract displacement (tone)
-
-        mov     delay, note
-        andi    delay, 0b11100000   ; extract delay
-        swap    delay
-        lsr     delay
-
+m4:     ldi     ZL, low(tone_tb * 2)
         ldi     ZH, high(tone_tb * 2)
-        ldi     ZL, low(tone_tb * 2)
-        add     ZL, displacement
+        add     ZL, idx_tone_clk
         adc     ZH, zero
         lpm     tone, Z
 
-        cpi     displacement, clock8_start
-        brlo    set_clk64
-set_clk8:
-        ldi     ti_clk_sel, clk8
-        rjmp    m4
-set_clk64:
-        ldi     ti_clk_sel, clk64
-m4:
+        ldi     ZL, low(clock_tb * 2)
+        ldi     ZH, high(clock_tb * 2)
+        add     ZL, idx_tone_clk
+        adc     ZH, zero
+        lpm     ti_clk_sel, Z
+
         out     OCR0A, tone
         out     TCCR0A, ti_com_en
         out     TCCR0B, ti_clk_sel
 
-        mov     ZH, p_delay_h
-        mov     ZL, p_delay_l
-        add     ZL, delay
-        adc     ZH, zero
-        lpm     delay, Z
-        dec     delay
-        rcall   make_delay
-
-        ldi     delay, 1
-        out     OCR0A, zero
-        out     TCCR0A, zero
-        rcall   make_delay
+m5:     rcall   make_delay
 
         ; restore Z
-        mov     ZH, p_note_h
-        mov     ZL, p_note_l
+        mov     ZL, ZL_copy
+        mov     ZH, ZH_copy
 
         rjmp    m3
 
 ; ---- ---- MAIN END, FUNCTION DEFINITIONS START ---- ----
 
 make_delay:
-        push    delay
+        mov     delay_copy, delay
         ldi     wd_to, 7    ; wdt timer = 2s (WDP2 + WDP1 + WDP0)
-s1:
-        lsl     delay
+
+s1:     lsl     delay
         brcc    s2
 
         rcall   set_wdt_prescaler
         rcall   wait_wdi
 
-s2:
-        dec     wd_to
+s2:     dec     wd_to
         brge    s1
 
-        pop     delay
+        mov     delay, delay_copy
         ret
+
+; ----
 
 wait_wdi:
         ldi     wd_reset, 0
@@ -173,8 +162,10 @@ s3:
         brne    s3
         ret
 
+; ----
+
 set_wdt_prescaler:
-        push    wd_to
+        mov     wd_to_copy, wd_to
         ori     wd_to, (1 << WDTIE)
         cli
         wdr
@@ -183,8 +174,10 @@ set_wdt_prescaler:
         out     WDTCR, temp
         out     WDTCR, wd_to
         sei
-        pop     wd_to
+        mov     wd_to, wd_to_copy
         ret
+
+; ----
 
 WATCHDOG:
         ldi     wd_reset, 1
@@ -193,67 +186,43 @@ WATCHDOG:
 
 ; ---- ---- TONE TABLES ---- ----
 ;
-.equ clock8_start = 0b10
-
-;...         ... 00000, 00001, 00010, 00011, 00100, 00101, 00110, 00111, 01000, 01001, 01010, 01011, 01100, 01101, 01110, 01111, 10000, 10001, 10010, 10011, 10100, 10101, 10110, 10111, 11000, 11001, 11010, 11011, 11100, 11101, 11110, 11111
-;...         ... C5,    C#5,   D5,    D#5,   E5,    F5,    F#5,   G5,    G#5,   A5,    A#5,   B5,    C6,    C#6,   D6,    D#6,   E6,    F6,    F#6,   G6,    G#6,   A6,    A#6,   B6,    C7,    C#7,   D7,    D#7,   E7,    F7,    F#7,   G7
-tone_tb:     .db 36,    34,    255,   241,   228,   215,   203,   191,   181,   170,   161,   152,   143,   135,   128,   121,   114,   107,   101,   96,    90,    85,    80,    76,    72,    68,    64,    60,    57,    54,    51,    48
-;clock_s_tb: .db clk64, clk64, clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8,  clk8
-
-
-; ---- ---- TEMPO TABLES ---- ----
-;
-; 1      1/2    1/4    1/8    1/16   1/32   1/64   1/128
-; 0b000  0b001  0b010  0b011  0b100  0b101  0b110  0b111
-
-;               8s          4s          2s          1s          500ms       250ms       125ms       64ms
-delay_tb0:  .db 0b10000000, 0b01000000, 0b00100000, 0b00010000, 0b00001000, 0b00000100, 0b00000010, 0b00000001
-;               12s         6s          3s          1.5s        750ms       375ms       190ms       -
-delay_tb1:  .db 0b11000000, 0b01100000, 0b00110000, 0b00011000, 0b00001100, 0b00000110, 0b00000011, 0
-;               10s         5s          2.5s        1.25s       625ms       312ms
-delay_tb2:  .db 0b10100000, 0b01010000, 0b00101000, 0b00010100, 0b00001010, 0b00000101
+;...      ... 00,    01,    02,    03,    04,    05,    06,    07,    08,    09,    0A,    0B,    0C,    0D,    0E,    0F,    10,    11,    12,    13,   14,   15,   16,   17,   18,   19,   1A,   1B,   1C,   1D,   1E,   1F,   20,   21,   22,   23,   24,   25,   26,   27,   28,   29,   2A,   2B,   2C,   2D,   2E,   2F,   30,   31,   32,   33,   34,   35
+;...      ... G3,    G#3,   A3,    A#3,   B3,    C4,    C#4,   D4,    D#4,   E4,    F4,    F#4,   G4,    G#4,   A4,    A#4,   B4,    C5,    C#5,   D5,   D#5,  E5,   F5,   F#5,  G5,   G#5,  A5,   A#5,  B5,   C6,   C#6,  D6,   D#6,  E6,   F6,   F#6,  G6,   G#6,  A6,   A#6,  B6,   C7,   C#7,  D7,   D#7,  E7,   F7,   F#7,  G7,   G#7,  A7,   A#7,  B7,   C8
+tone_tb:  .db 96,    90,    85,    80,    76,    72,    68,    64,    60,    57,    54,    51,    48,    45,    43,    40,    38,    36,    34,    255,  241,  228,  215,  203,  191,  181,  170,  161,  152,  143,  135,  128,  121,  114,  107,  101,  96,   90,   85,   80,   76,   72,   68,   64,   60,   57,   54,   51,   48,   45,   43,   40,   38,   36
+clock_tb: .db clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk64, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8, clk8
 
 
 ; ---- ---- MELODIES ---- ----
-
-;             >>                                <<
-; ~*~-----~*~>>   We wish you a mery christmas   <<~~~*~-----~*~~~
-;             >>                                <<
-melody01:   ; (1) = 1.5s
-            .dw (delay_tb1 * 2) + 3 ; tempo
-            ;   1/4 D4      1/4 G4      1/8 G4      1/8 A4      1/8 G4      1/8 F#4     1/4 E4      1/4 C4
-            .db 0b01000010, 0b01000111, 0b01100111, 0b01101001, 0b01100111, 0b01100110, 0b01000100, 0b01000000
-            ;   1/4 E4      1/4 A4      1/8 A4      1/8 B4      1/8 A4      1/8 G4      1/4 F#4     1/4 D4
-            .db 0b01000100, 0b01001001, 0b01101001, 0b01101011, 0b01101001, 0b01100111, 0b01000110, 0b01000010
-            ;   1/4 F#4     1/4 B4      1/8 B4      1/8 C5      1/8 B4      1/8 A4      1/4 G4      1/4 E4
-            .db 0b01000110, 0b01001011, 0b01101011, 0b01101100, 0b01101011, 0b01101001, 0b01000111, 0b01000100
-            ;   1/8 D4      1/8 D4      1/4 E4      1/4 A4      1/4 F#4     1/2 G4      1/4 D4      1/4 G4
-            .db 0b01100010, 0b01100010, 0b01000100, 0b01001001, 0b01000110, 0b00100111, 0b01000010, 0b01000111
-            ;   1/4 G4      1/4 G4      1/2 F#4     1/4 F#4     1/4 G4      1/4 F#4     1/4 E4      1/2 D4
-            .db 0b01000111, 0b01000111, 0b00100110, 0b01000110, 0b01000111, 0b01000110, 0b01000100, 0b00100010
-            ;   1/4 A4      1/4 B4      1/8 A4      1/8 A4      1/8 G4      1/8 G4      1/4 D5      1/4 D4
-            .db 0b01001001, 0b01001011, 0b01101001, 0b01101001, 0b01100111, 0b01100111, 0b01001110, 0b01000010
-            ;   1/8 D4      1/8 D4      1/4 E4      1/4 A4      1/4 F#4     1/2 G4      end         -
-            .db 0b01100010, 0b01100010, 0b01000100, 0b01001001, 0b01000110, 0b00100111, 0xFF,       0
-
+;
 ;        /                            \
 ;  +----/    Tokyo ghoul - Unravel     \-----+
 ;       \                              /
-melody02:   ;
-            .dw (delay_tb0 * 2) + 2
-            ;
+melody02:   ;   delay displacement, tone displacement
             .db 0, 0
-
-; todo:
-;   1) delay enhacement, remake delay table
-;   2) handle pauses
-;   3)
-
-;  0 0 0 0  0 0 0 0         delay
-;  |              |
-;  |              +--->  16ms
-;  +--->  2s
-
-
-
-
+            ;
+            .db 0b0001_0000, 0x1B   ; 1/8 Bb5
+            .db 0b0010_0000, 0x1D   ; 1/4 C6
+            .db 0b0010_0000, 0x1B   ; 1/4 Bb5
+            .db 0b0001_0000, 0x1A   ; 1/8 A5
+            .db 0b0001_1111, 0x18   ; 1/8.... G5
+            .db 0b0000_0001, 0      ; 1/128 -
+            ; ----
+            .db 0b0010_0000, 0x1D   ; 1/4 C6
+            .db 0b0010_0000, 0x1B   ; 1/4 Bb5
+            .db 0b0010_0000, 0x1A   ; 1/4 A5
+            .db 0b0001_1000, 0x18   ; 1/8. G5
+            .db 0b0000_1000, 0      ; 1/16 -
+            ; ----
+            .db 0b0001_0000, 0x18   ; 1/8 G5
+            .db 0b0001_1000, 0x16   ; 1/8. F5
+            .db 0b0000_1000, 0      ; 1/16 -
+            .db 0b0001_0000, 0      ; 1/8 -
+            .db 0b0000_1111, 0x14   ; 1/16... Eb5
+            .db 0b0000_0001, 0      ; 1/128 -
+            .db 0b0010_0000, 0x14   ; 1/4 Eb5
+            .db 0b0001_0000, 0x16   ; 1/8 F5
+            ; ----
+            .db 0b0010_0000, 0x13   ; 1/4 D5
+            .db 0b0110_0000, 0      ; 1/2. -
+            ; ----
+            .db 0, 0xFF
