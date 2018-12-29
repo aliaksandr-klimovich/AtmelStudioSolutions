@@ -47,6 +47,8 @@
         reti    ;rjmp    ADC_H
 
 RESET:
+        ; ---- ---- SETUP ---- ----
+
         ; Configure buzzer (connected to LED1), LED2, KEY1, KEY2.
         ; Buzzer as output, disabled.
         ; LED2 as output, disabled.
@@ -66,22 +68,18 @@ RESET:
         out     ACSR, temp
 
         ; Configure WDT
-        cli
-        wdr
-        in      temp, WDTCR
-        ori     temp, (1 << WDCE) | (1 << WDE)
-        out     WDTCR, temp
-        ldi     wd_to, (1 << WDTIE) | (1 << WDP2)
-        out     WDTCR, wd_to
-        sei
+        ;cli
+        ;wdr
+        ;in      temp, WDTCR
+        ;ori     temp, (1 << WDCE) | (1 << WDE)
+        ;out     WDTCR, temp
+        ;ldi     wd_to, (1 << WDTIE) | (1 << WDP2)
+        ;out     WDTCR, wd_to
+        ;sei
 
         ; Configure timer
-m1:     ldi     temp, no_clk
-        out     TCCR0B, temp
-
-        ldi     temp, 0
-        out     TCCR0A, temp
-
+m1:     out     TCCR0A, zero
+        out     TCCR0B, zero
         ldi     ti_com_en, com_en
 
         ; Read KEY1
@@ -153,7 +151,7 @@ m4:
 
 make_delay:
         push    delay
-        ldi     wd_to, 9    ; wdt timer = 8s (WDP3 + WDP0)
+        ldi     wd_to, 7    ; wdt timer = 2s (WDP2 + WDP1 + WDP0)
 s1:
         lsl     delay
         brcc    s2
@@ -163,8 +161,7 @@ s1:
 
 s2:
         dec     wd_to
-        cpi     wd_to, 2
-        brsh    s1
+        brge    s1
 
         pop     delay
         ret
@@ -219,10 +216,11 @@ delay_tb2:  .db 0b10100000, 0b01010000, 0b00101000, 0b00010100, 0b00001010, 0b00
 
 ; ---- ---- MELODIES ---- ----
 
+;             >>                                <<
 ; ~*~-----~*~>>   We wish you a mery christmas   <<~~~*~-----~*~~~
-;
+;             >>                                <<
 melody01:   ; (1) = 1.5s
-            .dw (delay_tb1 * 2) + 3
+            .dw (delay_tb1 * 2) + 3 ; tempo
             ;   1/4 D4      1/4 G4      1/8 G4      1/8 A4      1/8 G4      1/8 F#4     1/4 E4      1/4 C4
             .db 0b01000010, 0b01000111, 0b01100111, 0b01101001, 0b01100111, 0b01100110, 0b01000100, 0b01000000
             ;   1/4 E4      1/4 A4      1/8 A4      1/8 B4      1/8 A4      1/8 G4      1/4 F#4     1/4 D4
@@ -238,7 +236,24 @@ melody01:   ; (1) = 1.5s
             ;   1/8 D4      1/8 D4      1/4 E4      1/4 A4      1/4 F#4     1/2 G4      end         -
             .db 0b01100010, 0b01100010, 0b01000100, 0b01001001, 0b01000110, 0b00100111, 0xFF,       0
 
+;        /                            \
+;  +----/    Tokyo ghoul - Unravel     \-----+
+;       \                              /
 melody02:   ;
             .dw (delay_tb0 * 2) + 2
             ;
             .db 0, 0
+
+; todo:
+;   1) delay enhacement, remake delay table
+;   2) handle pauses
+;   3)
+
+;  0 0 0 0  0 0 0 0         delay
+;  |              |
+;  |              +--->  16ms
+;  +--->  2s
+
+
+
+
