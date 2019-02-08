@@ -9,7 +9,7 @@
 
 int main(void) {
 
-    MAX7219_init();
+    MAX7219_init(DDRB, PORTB, 3, 2, 5);
 
     MAX7219_enter_test_mode();
     _delay_ms(500);

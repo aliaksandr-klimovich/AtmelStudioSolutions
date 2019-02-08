@@ -33,19 +33,29 @@ static const _MAX7219_table MAX7219_table[] = {
     {'A', 0b01110111},
 };
 
-void MAX7219_init(void) {
-    MAX7219_DDR |= (1 << MAX7219_DIN) | (1 << MAX7219_CS) | (1 << MAX7219_CLK);
-    MAX7219_PORT |= (1 << MAX7219_CS);
+volatile uint8_t * MAX7219_DDR;
+volatile uint8_t * MAX7219_PORT;
+uint8_t MAX7219_DIN, MAX7219_CS, MAX7219_CLK;
+
+void MAX7219_init(volatile uint8_t * DDR, volatile uint8_t * PORT, uint8_t DIN, uint8_t CS, uint8_t CLK) {
+    MAX7219_DDR = &DDR;
+    MAX7219_PORT = &PORT;
+    MAX7219_DIN = DIN;
+    MAX7219_CS = CS;
+    MAX7219_CLK = CLK;
+    
+    *MAX7219_DDR |= (1 << MAX7219_DIN) | (1 << MAX7219_CS) | (1 << MAX7219_CLK);
+    *MAX7219_PORT |= (1 << MAX7219_CS);
     SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
 }
 
 void MAX7219_write(uint8_t addr, uint8_t data) {
-    MAX7219_PORT &= ~(1 << MAX7219_CS);
+    *MAX7219_PORT &= ~(1 << MAX7219_CS);
     SPDR = addr;
     while(!(SPSR & (1 << SPIF)));
     SPDR = data;
     while(!(SPSR & (1 << SPIF)));
-    MAX7219_PORT |= (1 << MAX7219_CS);
+    *MAX7219_PORT |= (1 << MAX7219_CS);
 }
 
 void MAX7219_shutdown(void) {

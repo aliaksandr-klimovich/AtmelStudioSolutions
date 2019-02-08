@@ -4,15 +4,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 
-#define MAX7219_DDR     DDRB
-#define MAX7219_PORT    PORTB
-#define MAX7219_PIN     PINB
-
-#define MAX7219_DIN     3  // MOSI
-#define MAX7219_CS      2  // SS
-#define MAX7219_CLK     5  // SCK 
-
-void MAX7219_init(void);
+void MAX7219_init(volatile uint8_t * DDR, volatile uint8_t * PORT, uint8_t DIN, uint8_t CS, uint8_t CLK);
 void MAX7219_write(uint8_t addr, uint8_t data);
 void MAX7219_shutdown(void);
 void MAX7219_normal_operation(void);
