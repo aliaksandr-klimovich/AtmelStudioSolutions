@@ -3,8 +3,11 @@
 
 #include <avr/io.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-void MAX7219_init(volatile uint8_t * DDR, volatile uint8_t * PORT, uint8_t DIN, uint8_t CS, uint8_t CLK);
+short MAX7219_DOUBLE_PREC;
+
+void MAX7219_init(volatile uint8_t * DDR_ADDR, volatile uint8_t * PORT_ADDR, uint8_t DIN, uint8_t CS, uint8_t CLK);
 void MAX7219_write(uint8_t addr, uint8_t data);
 void MAX7219_shutdown(void);
 void MAX7219_normal_operation(void);
@@ -17,5 +20,7 @@ void MAX7219_clean(void);
 void MAX7219_set_intensity(uint8_t intensity);
 void MAX7219_set_default_config(void);
 void MAX7219_print(char* s);
+void MAX7219_print_long(signed long sl);
+void MAX7219_print_double(double d);
 
 #endif /* MAX7219_H_ */

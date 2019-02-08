@@ -9,46 +9,65 @@
 
 int main(void) {
 
-    MAX7219_init(DDRB, PORTB, 3, 2, 5);
+    // initialize MAX7219 as SPI on B ports
+    // DC (MOSI) -> PB3
+    // CS -> PB2
+    // CLK -> PB5 
+    MAX7219_init(&DDRB, &PORTB, 3, 2, 5);
+    
+    // shutdown if was previously enabled
+    MAX7219_shutdown();
 
+    // enter test mode
+    // in this mode the display is enabled 
     MAX7219_enter_test_mode();
     _delay_ms(500);
-    MAX7219_exit_test_mode();
+    MAX7219_exit_test_mode();  // also disables display
     _delay_ms(500);
 
+    // to set medium intensity
+    //        scan limit to 8 digits
+    //        decode mode to 0xFF (decode all characters)
+    // to clean the display 
+    // and to enable it!
     MAX7219_set_default_config();
 
     int i;
 
+    // testing...
     for (i=1; i<=8; i++) {
         MAX7219_write(i, i-1);
         _delay_ms(500);
     }
 
+    // testing...
     for (i=1; i<=8; i++) {
         MAX7219_write(i, (8-i) | 0b10000000);
         _delay_ms(500);
     }
 
-    MAX7219_write(8, 0xA);
-    MAX7219_write(7, 0xA);
-    MAX7219_write(6, 0xC);
-    MAX7219_write(5, 0xB);
-    MAX7219_write(4, 0xD);
-    MAX7219_write(3, 0xE);
-    MAX7219_write(2, 0xA);
-    MAX7219_write(1, 0xA);
-    _delay_ms(1500);
+    // testing... write a "--HELP--" using direct (decode mode) writing
+    MAX7219_write(8, 0xA);  // -
+    MAX7219_write(7, 0xA);  // -
+    MAX7219_write(6, 0xC);  // H
+    MAX7219_write(5, 0xB);  // E
+    MAX7219_write(4, 0xD);  // L     
+    MAX7219_write(3, 0xE);  // P
+    MAX7219_write(2, 0xA);  // -
+    MAX7219_write(1, 0xA);  // -
+    _delay_ms(2000);
 
-    char str[20];
-    i = 255;
-    itoa(i, str, 10);
-    strcat(str, "\0");
-    MAX7219_print(str);
-    _delay_ms(1500);
-
-    MAX7219_print("3.141592\0");
-    _delay_ms(2500);
+    // testing...
+    MAX7219_print("3.141592");
+    _delay_ms(1000);
+    
+    // testing...
+    MAX7219_print_long(-7171717L);
+    _delay_ms(1000);
+    
+    // testing...
+    MAX7219_print_double(3.13f);
+    _delay_ms(1000);
 
     MAX7219_shutdown();
 

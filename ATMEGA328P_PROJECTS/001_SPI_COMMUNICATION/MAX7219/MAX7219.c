@@ -37,9 +37,9 @@ volatile uint8_t * MAX7219_DDR;
 volatile uint8_t * MAX7219_PORT;
 uint8_t MAX7219_DIN, MAX7219_CS, MAX7219_CLK;
 
-void MAX7219_init(volatile uint8_t * DDR, volatile uint8_t * PORT, uint8_t DIN, uint8_t CS, uint8_t CLK) {
-    MAX7219_DDR = &DDR;
-    MAX7219_PORT = &PORT;
+void MAX7219_init(volatile uint8_t * DDR_ADDR, volatile uint8_t * PORT_ADDR, uint8_t DIN, uint8_t CS, uint8_t CLK) {
+    MAX7219_DDR = DDR_ADDR;
+    MAX7219_PORT = PORT_ADDR;
     MAX7219_DIN = DIN;
     MAX7219_CS = CS;
     MAX7219_CLK = CLK;
@@ -47,6 +47,8 @@ void MAX7219_init(volatile uint8_t * DDR, volatile uint8_t * PORT, uint8_t DIN, 
     *MAX7219_DDR |= (1 << MAX7219_DIN) | (1 << MAX7219_CS) | (1 << MAX7219_CLK);
     *MAX7219_PORT |= (1 << MAX7219_CS);
     SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
+    
+    MAX7219_DOUBLE_PREC = 2;
 }
 
 void MAX7219_write(uint8_t addr, uint8_t data) {
@@ -113,7 +115,7 @@ void MAX7219_set_default_config(void) {
     MAX7219_normal_operation();
 }
 
-void MAX7219_print(char* s) {  // s should \0 terminated (ASCIIZ string)
+void MAX7219_print(char* s) {  // s should be \0 terminated (ASCIIZ string)
     
     if (_MAX7219_decode_mode != 0x00) {
         MAX7219_set_decode_mode(0x00);
@@ -160,4 +162,18 @@ void MAX7219_print(char* s) {  // s should \0 terminated (ASCIIZ string)
     }  
        
 }
+
+void MAX7219_print_long(signed long sl) {
+    //  -2147483648 .. 2147483647
+    // extra chars will be cut
+    char buf[12];
+    ltoa(sl, buf, 10);
+    MAX7219_print(buf);  
+}  
+
+void MAX7219_print_double(double d) {
+    char buf[9];
+    dtostrf(d, 8, MAX7219_DOUBLE_PREC, buf);
+    MAX7219_print(buf); 
+}  
 
