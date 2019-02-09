@@ -4,22 +4,20 @@
 #include <util/delay.h>
 
 #include "MAX7219/MAX7219.h"
-#include <stdlib.h>
-#include <string.h>
 
 int main(void) {
 
     // initialize MAX7219 as SPI on B ports
     // DC (MOSI) -> PB3
     // CS -> PB2
-    // CLK -> PB5 
+    // CLK -> PB5
     MAX7219_init(&DDRB, &PORTB, 3, 2, 5);
-    
+
     // shutdown if was previously enabled
     MAX7219_shutdown();
 
     // enter test mode
-    // in this mode the display is enabled 
+    // in this mode the display is enabled
     MAX7219_enter_test_mode();
     _delay_ms(500);
     MAX7219_exit_test_mode();  // also disables display
@@ -27,10 +25,13 @@ int main(void) {
 
     // to set medium intensity
     //        scan limit to 8 digits
-    //        decode mode to 0xFF (decode all characters)
-    // to clean the display 
+    //        decode mode to 0x00 (no decode)
+    // to clean the display
     // and to enable it!
     MAX7219_set_default_config();
+    
+    MAX7219_set_decode_mode(0xFF);
+    MAX7219_clean();
 
     int i;
 
@@ -51,7 +52,7 @@ int main(void) {
     MAX7219_write(7, 0xA);  // -
     MAX7219_write(6, 0xC);  // H
     MAX7219_write(5, 0xB);  // E
-    MAX7219_write(4, 0xD);  // L     
+    MAX7219_write(4, 0xD);  // L
     MAX7219_write(3, 0xE);  // P
     MAX7219_write(2, 0xA);  // -
     MAX7219_write(1, 0xA);  // -
@@ -60,15 +61,16 @@ int main(void) {
     // testing...
     MAX7219_print("3.141592");
     _delay_ms(1000);
-    
+
     // testing...
     MAX7219_print_long(-7171717L);
     _delay_ms(1000);
-    
+
     // testing...
-    MAX7219_print_double(3.13f);
+    MAX7219_print_double(-369.13f);
     _delay_ms(1000);
 
+    // shutdown the device after all testing procedures
     MAX7219_shutdown();
 
     return 0;
