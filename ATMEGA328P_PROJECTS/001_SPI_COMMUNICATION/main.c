@@ -72,6 +72,4 @@ int main(void) {
 
     // shutdown the device after all testing procedures
     MAX7219_shutdown();
-
-    return 0;
 }

@@ -1,13 +1,11 @@
-
-
 #include <avr/io.h>
-
+#include "SPI_lib/SPI.h"
 
 int main(void)
 {
-    /* Replace with your application code */
     while (1) 
     {
+        // todo: to be tested with oscilloscope    
     }
 }
 

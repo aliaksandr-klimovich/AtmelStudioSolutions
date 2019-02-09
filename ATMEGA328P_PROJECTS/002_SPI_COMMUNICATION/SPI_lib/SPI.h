@@ -2,7 +2,7 @@
 #define SPI_H_
 
 #include <avr/io.h>
-#include "config.h"
+#include "SPI_config.h"
 
 void SPI_MasterInit(void);
 void SPI_MasterTransmit(char cData);
