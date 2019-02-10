@@ -30,9 +30,10 @@ static const _MAX7219_table MAX7219_table[] = {
     {'b', 0b00011111},
     {'A', 0b01110111},  // R
     {'J', 0b00111100},
+    {'*', 0b01100011},  // degree sign
 };
 
-static const size_t MAX7219_TABLE_SIZE = sizeof(MAX7219_table) / sizeof(MAX7219_table[0]);
+static const uint8_t MAX7219_TABLE_SIZE = sizeof(MAX7219_table) / sizeof(MAX7219_table[0]);
 
 volatile uint8_t * MAX7219_DDR;
 volatile uint8_t * MAX7219_PORT;
@@ -96,7 +97,7 @@ void MAX7219_set_scan_limit(uint8_t sl /* 0 - 7 */) {
     if (sl >= 0 && sl <= 7) {
 #endif
         MAX7219_write(0x0B, sl);
-#if MAX7219_PARAM_CHECKS == 1        
+#if MAX7219_PARAM_CHECKS == 1
     }
 #endif
 }
@@ -179,36 +180,54 @@ void MAX7219_print(char* string) {  // string should be \0 terminated (ASCIIZ st
     }
 }
 
-void MAX7219_print_int32(int32_t val) {
+/*
+    Convert integer to ASCIIZ.
+    `buf` size should be equal to `width` in case of positive value
+        and `width + 1` is case of negative value.  
+*/ 
+/* static void int_to_str (int32_t val, uint8_t width, char * buf) {
+    uint8_t i = 0;
+    uint8_t j = 0;  // stop index
+    
+    if (val == 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+    } else {
+        if (val < 0) {
+            buf[0] = '-';
+            val = -val;
+            ++j;
+        }
+        i = width;
+        while (val && i > j) {
+            buf[--i] = val % 10 + '0';
+            val /= 10;
+        }
+        if (i != j) {
+            for (; i < width; j++, i++) {
+                buf[j] = buf[i];
+            }
+            buf[j] = '\0';
+        } else {
+            buf[width] = '\0';
+        }
+    }
+} */
+
+void MAX7219_print_int(int32_t val) {
 #if MAX7219_PARAM_CHECKS == 1
     if (val >= -9999999 && val <= 99999999) {
 #endif
-        char buf[9];  // ASCIIZ
-        char buf_num[8];  // buffer for number conversion algorithm
-        short i=0;
-        short i_num = 8;
-        short stop_idx = 0;
-        if (val == 0) {
-            buf[0] = '0';
-            buf[1] = '\0';
-        } else {
-            if (val < 0) {
-                buf[i++] = '-';
-                val = -val;
-                ++stop_idx;
-            }
-            while(val && i_num > stop_idx) {  // only 8 or 7 digits are used
-                buf_num[--i_num] = val % 10 + '0';
-                val /= 10;
-            }
-            for (; i_num < 8; i_num++) {
-                buf[i++] = buf_num[i_num];
-            }
-            buf[++i] = '\0';
-        }            
+        char buf[9];
+        ltoa(val, buf, 10);
         MAX7219_print(buf);
 #if MAX7219_PARAM_CHECKS == 1
     }
 #endif    
 }
 
+void MAX7219_print_float(float value, uint8_t prec /* nums count after point */) { 
+    char buf[10];
+    dtostrf(value, 8, prec, buf);
+    MAX7219_print(buf);
+}

@@ -65,7 +65,7 @@ int main(void) {
     _delay_ms(1000);
 
     // testing...
-    MAX7219_print_int32(-7171717L);
+    MAX7219_print_int(-7171717L);
     _delay_ms(1000);
 
     // testing...
