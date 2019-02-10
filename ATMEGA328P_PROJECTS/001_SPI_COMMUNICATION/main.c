@@ -11,10 +11,10 @@ int main(void) {
     // DC (MOSI) -> PB3
     // CS -> PB2
     // CLK -> PB5
-    MAX7219_init(&DDRB, &PORTB, 3, 2, 5);
+    MAX7219_init(&DDRB, &PORTB, &DDRB, &PORTB, 3, 2, 5);
 
-    // shutdown if was previously enabled
-    MAX7219_shutdown();
+    // shutdown if was previously enabled (in case of MCU reset)
+    MAX7219_off();
 
     // enter test mode
     // in this mode the display is enabled
@@ -31,7 +31,7 @@ int main(void) {
     MAX7219_set_default_config();
     
     MAX7219_set_decode_mode(0xFF);
-    MAX7219_clean();
+    MAX7219_clear();
 
     int i;
 
@@ -58,18 +58,20 @@ int main(void) {
     MAX7219_write(1, 0xA);  // -
     _delay_ms(2000);
 
+    MAX7219_set_decode_mode(0);
+
     // testing...
     MAX7219_print("3.141592");
     _delay_ms(1000);
 
     // testing...
-    MAX7219_print_long(-7171717L);
+    MAX7219_print_int32(-7171717L);
     _delay_ms(1000);
 
     // testing...
-    MAX7219_print_double(-369.13f);
-    _delay_ms(1000);
+    // MAX7219_print_double(-369.13f);
+    // _delay_ms(1000);
 
     // shutdown the device after all testing procedures
-    MAX7219_shutdown();
+    MAX7219_off();
 }
