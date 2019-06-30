@@ -15,23 +15,24 @@
 #define TM1637_CMD_BRIGHTNESS   0x80
 #define TM1637_CMD_SCREEN_ON    0x08
 #define TM1637_CMD_SCREEN_OFF   0
+//#define TM1637_CMD_TEST_MODE    0x08
 
 #define TM1637_BUF_SIZE 4  // 4 is for clock display, max is 8
-#define TM1637_DIGITS_SIZE 16
+#define TM1637_CHAR_TABLE_SIZE 16
 
-uint8_t TM1637_delay;
+uint32_t TM1637_delay;
 uint8_t TM1637_brightness;
 uint8_t TM1637_screen_on;
 
-const uint8_t TM1637_DIGITS[TM1637_DIGITS_SIZE];
+const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE];
 uint8_t TM1637_buf[TM1637_BUF_SIZE];
 
 void TM1637_init(volatile uint8_t *clk_ddr, volatile uint8_t *clk_port_reg, uint8_t clk_port_num,
                  volatile uint8_t *dio_ddr, volatile uint8_t *dio_port_reg, volatile uint8_t *dio_pin_reg, uint8_t dio_port_num);
-
-void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
-                                      uint8_t data[], uint8_t len);
-
-void TM1637_write_buffer(void);                                      
+//void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
+//                                      uint8_t data[], uint8_t len);
+void TM1637_write_buffer(void);
+void TM1637_print(const char * s, ...);
+//void TM1637_test_mode(void);                                      
 
 #endif /* TM1637_H_ */

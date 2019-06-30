@@ -8,24 +8,30 @@
 #include <avr/io.h>
 #include "TM1637/TM1637.h"
 
-void delay(uint32_t ms)
-{   
-    for (uint32_t i=0; i < (1000 + ms); i++)
-    {
-        asm("NOP\n");
-    }                    
-}
+#define F_CPU 16000000UL
+#include <util/delay.h>
 
 int main(void)
 {
-    
     TM1637_init(&DDRC, &PORTC, 0, &DDRC, &PORTC, &PINC, 1);
+    TM1637_screen_on = 1;
+    
+    //TM1637_print("");
+    //_delay_ms(2000U);
+    //TM1637_test_mode();
 
-    
-    
     while (1)
     {
-        
+        for (uint8_t min=0; min<60; min++)
+        {
+            for (uint8_t sec=0; sec<60; sec++)
+            { 
+                TM1637_print("%02u:%02u", min, sec);
+                _delay_ms(500U);
+                TM1637_print("%02u_%02u", min, sec);
+                _delay_ms(500U);
+            }
+        }
     }
 }
 

@@ -5,6 +5,9 @@
  *  Author: Aliaksandr
  */
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
 #include "TM1637.h"
 
 volatile uint8_t *TM1637_CLK_DDR;
@@ -17,12 +20,12 @@ volatile uint8_t *TM1637_DIO_PIN_REG;
 uint8_t TM1637_DIO_PORT_NUM;
 
 uint8_t TM1637_buf[TM1637_BUF_SIZE] = {0};
-    
-uint8_t TM1637_delay = 10;
+
+uint32_t TM1637_delay = 0;
 uint8_t TM1637_brightness = 0;  // 0 .. 7
 uint8_t TM1637_screen_on = 0;   // 0 (on) .. 1 (off)
 
-const uint8_t TM1637_DIGITS[] = {
+const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
    // XGFEDCBA   (X is dp)
     0b00111111,  // 0
     0b00000110,  // 1
@@ -67,7 +70,7 @@ void TM1637_init(volatile uint8_t *clk_ddr, volatile uint8_t *clk_port_reg, uint
 
 static void TM1637_cmd_delay()
 {
-    for (uint8_t i = 0; i < TM1637_delay; i++)
+    for (uint32_t i = 0; i < TM1637_delay; i++)
     {
         asm("NOP\n");
     }
@@ -132,7 +135,7 @@ static uint8_t TM1637_read_ack()
     return ack;
 }
 
-void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
+static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
                                       uint8_t data[], uint8_t len)
 {
     TM1637_start();
@@ -156,17 +159,83 @@ void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
     TM1637_stop();
 }
 
-void TM1637_write_buffer(void)
+inline void TM1637_write_buffer(void)
 {
     TM1637_write_SRAM_auto_increment
     (
-        TM1637_CMD_DATA_WRITE, 
-        TM1637_CMD_INIT_ADDR, 
-        TM1637_CMD_BRIGHTNESS | 
-            (TM1637_brightness & 0x07) | 
+        TM1637_CMD_DATA_WRITE,
+        TM1637_CMD_INIT_ADDR,
+        TM1637_CMD_BRIGHTNESS |
+            (TM1637_brightness & 0x07) |
             (TM1637_screen_on ? TM1637_CMD_SCREEN_ON : TM1637_CMD_SCREEN_OFF),
         TM1637_buf,
         TM1637_BUF_SIZE
-    );  
+    );
 }
+
+void TM1637_print(const char * s, ...)
+{
+    char buf[TM1637_BUF_SIZE + 2] = {0};  // 2 = ':' + NUL terminator
+    char *p_buf = buf;  // pointer to buf
+    char c;  // char from buf
+    uint8_t i;  // buf index
+    uint8_t j;  // TM1637_buf index
+    
+    va_list ap;
+    va_start(ap, s);
+    vsnprintf(p_buf, (size_t)(TM1637_BUF_SIZE + 2), s, ap);
+    va_end(ap);
+    
+    memset(TM1637_buf, 0, TM1637_BUF_SIZE);
+
+    for (i=0, j=0; /* infinite loop */; i++, j++)
+    {
+        c = buf[i];
+        
+        if (c == 0)  // buffer is null terminated
+            break;
+        else if (c >= '0' && c <= '9')
+            c -= '0';
+        else if (c >= 'a' && c <= 'f')
+        {
+            c -= 'a';
+            c += 10;  // to properly address the TM1637_CHAR_TABLE table            
+        }        
+        else if (c >= 'A' && c <= 'F')
+        {
+            c -= 'A';
+            c += 10;
+        }        
+        else if ((c == ':' || c == '.') && i == 2)
+        {
+            TM1637_buf[--j] |= 0x80;  // add "dp" to previous character
+            continue;
+        }
+        else if ((c == ' ' || c == '_') && i == 2)
+        {
+            j--;
+            continue;
+        }
+        else
+            continue;
+
+        TM1637_buf[j] = TM1637_CHAR_TABLE[(uint8_t)c];
+    }
+
+    TM1637_write_buffer();
+}
+
+/*
+void TM1637_test_mode(void)
+{
+    TM1637_write_SRAM_auto_increment
+    (
+        TM1637_CMD_DATA_WRITE | TM1637_CMD_TEST_MODE,
+        TM1637_CMD_INIT_ADDR,
+        TM1637_CMD_BRIGHTNESS | 0 | TM1637_CMD_SCREEN_ON,
+        TM1637_buf,
+        1
+    );
+}
+*/
 
