@@ -5,10 +5,8 @@
  *  Author: Aliaksandr
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include "TM1637.h"
+
 
 volatile uint8_t *TM1637_CLK_DDR;
 volatile uint8_t *TM1637_CLK_PORT_REG;
@@ -20,8 +18,6 @@ volatile uint8_t *TM1637_DIO_PIN_REG;
 uint8_t TM1637_DIO_PORT_NUM;
 
 uint8_t TM1637_buf[TM1637_BUF_SIZE] = {0};
-
-uint32_t TM1637_delay = 0;
 uint8_t TM1637_brightness = 0;  // 0 .. 7
 uint8_t TM1637_screen_on = 0;   // 0 (on) .. 1 (off)
 
@@ -46,7 +42,8 @@ const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
 };
 
 void TM1637_init(volatile uint8_t *clk_ddr, volatile uint8_t *clk_port_reg, uint8_t clk_port_num,
-                 volatile uint8_t *dio_ddr, volatile uint8_t *dio_port_reg, volatile uint8_t *dio_pin_reg, uint8_t dio_port_num)
+                 volatile uint8_t *dio_ddr, volatile uint8_t *dio_port_reg, volatile uint8_t *dio_pin_reg,
+                 uint8_t dio_port_num)
 {
     // store CLK pin configuration
     TM1637_CLK_DDR = clk_ddr;
@@ -70,9 +67,9 @@ void TM1637_init(volatile uint8_t *clk_ddr, volatile uint8_t *clk_port_reg, uint
 
 static void TM1637_cmd_delay()
 {
-    for (uint32_t i = 0; i < TM1637_delay; i++)
+    for (uint16_t i=0; i < TM1637_DELAY; i++)
     {
-        asm("NOP\n");
+        asm("nop");
     }
 }
 
@@ -180,18 +177,18 @@ void TM1637_print(const char * s, ...)
     char c;  // char from buf
     uint8_t i;  // buf index
     uint8_t j;  // TM1637_buf index
-    
+
     va_list ap;
     va_start(ap, s);
     vsnprintf(p_buf, (size_t)(TM1637_BUF_SIZE + 2), s, ap);
     va_end(ap);
-    
+
     memset(TM1637_buf, 0, TM1637_BUF_SIZE);
 
     for (i=0, j=0; /* infinite loop */; i++, j++)
     {
         c = buf[i];
-        
+
         if (c == 0)  // buffer is null terminated
             break;
         else if (c >= '0' && c <= '9')
@@ -199,13 +196,13 @@ void TM1637_print(const char * s, ...)
         else if (c >= 'a' && c <= 'f')
         {
             c -= 'a';
-            c += 10;  // to properly address the TM1637_CHAR_TABLE table            
-        }        
+            c += 10;  // to properly address the TM1637_CHAR_TABLE table
+        }
         else if (c >= 'A' && c <= 'F')
         {
             c -= 'A';
             c += 10;
-        }        
+        }
         else if ((c == ':' || c == '.') && i == 2)
         {
             TM1637_buf[--j] |= 0x80;  // add "dp" to previous character
@@ -224,18 +221,3 @@ void TM1637_print(const char * s, ...)
 
     TM1637_write_buffer();
 }
-
-/*
-void TM1637_test_mode(void)
-{
-    TM1637_write_SRAM_auto_increment
-    (
-        TM1637_CMD_DATA_WRITE | TM1637_CMD_TEST_MODE,
-        TM1637_CMD_INIT_ADDR,
-        TM1637_CMD_BRIGHTNESS | 0 | TM1637_CMD_SCREEN_ON,
-        TM1637_buf,
-        1
-    );
-}
-*/
-
