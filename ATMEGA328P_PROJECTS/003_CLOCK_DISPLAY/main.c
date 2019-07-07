@@ -5,18 +5,16 @@
  * Author : Aliaksandr
  */
 
-#include <avr/io.h>
-
 #define F_CPU 16000000UL
 #include <util/delay.h>
 
 #include "TM1637/TM1637.h"
-
+#include "PIN_MAP/pin_map.h"
+#include "PIN_MAP/avr_map.h"  // includes <avr/io.h>
 
 int main(void)
 {
-    TM1637_init(&DDRC, &PORTC, 0, &DDRC, &PORTC, &PINC, 1);
-    TM1637_screen_on = 1;
+    TM1637_init(&PC0, &PC1);
 
     while (1)
     {

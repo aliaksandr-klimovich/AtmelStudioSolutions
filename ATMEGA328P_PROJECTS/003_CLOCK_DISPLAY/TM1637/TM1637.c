@@ -8,18 +8,13 @@
 #include "TM1637.h"
 
 
-volatile uint8_t *TM1637_CLK_DDR;
-volatile uint8_t *TM1637_CLK_PORT_REG;
-uint8_t TM1637_CLK_PORT_NUM;
-
-volatile uint8_t *TM1637_DIO_DDR;
-volatile uint8_t *TM1637_DIO_PORT_REG;
-volatile uint8_t *TM1637_DIO_PIN_REG;
-uint8_t TM1637_DIO_PORT_NUM;
+PIN *TM1637_CLK;
+PIN *TM1637_DIO;
 
 uint8_t TM1637_buf[TM1637_BUF_SIZE] = {0};
 uint8_t TM1637_brightness = 0;  // 0 .. 7
-uint8_t TM1637_screen_on = 0;   // 0 (on) .. 1 (off)
+uint8_t TM1637_screen_on = 1;   // 0 (off) .. 1 (on),
+// First buffer_write command will switch on the screen if 1 (on) is set
 
 const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
    // XGFEDCBA   (X is dp)
@@ -41,35 +36,25 @@ const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
     0b01110001   // F
 };
 
-void TM1637_init(volatile uint8_t *clk_ddr, volatile uint8_t *clk_port_reg, uint8_t clk_port_num,
-                 volatile uint8_t *dio_ddr, volatile uint8_t *dio_port_reg, volatile uint8_t *dio_pin_reg,
-                 uint8_t dio_port_num)
+void TM1637_init(PIN *clk, PIN *dio)
 {
-    // store CLK pin configuration
-    TM1637_CLK_DDR = clk_ddr;
-    TM1637_CLK_PORT_REG = clk_port_reg;
-    TM1637_CLK_PORT_NUM = clk_port_num;
+    TM1637_CLK = clk;  // store CLK pin
+    TM1637_DIO = dio;  // store DIO pin
 
     // set CLK pin as a high output
-    *TM1637_CLK_PORT_REG |= (1 << TM1637_CLK_PORT_NUM);  // CLK to HIGH
-    *TM1637_CLK_DDR |= (1 << TM1637_CLK_PORT_NUM);  // CLK as output
-
-    // store DIO pin configuration
-    TM1637_DIO_DDR = dio_ddr;
-    TM1637_DIO_PORT_REG = dio_port_reg;
-    TM1637_DIO_PIN_REG = dio_pin_reg;
-    TM1637_DIO_PORT_NUM = dio_port_num;
+    SET_PORT(TM1637_CLK);  // CLK to HIGH
+    SET_DDR(TM1637_CLK);  // CLK as output
 
     // set DIO pin as a high output
-    *TM1637_DIO_PORT_REG |= (1 << TM1637_DIO_PORT_NUM);  // DIO to HIGH
-    *TM1637_DIO_DDR |= (1 << TM1637_DIO_PORT_NUM);  // DIO as output
+    SET_PORT(TM1637_DIO);  // DIO to HIGH
+    SET_DDR(TM1637_DIO);   // DIO as output
 }
 
 static void TM1637_cmd_delay()
 {
     for (uint16_t i=0; i < TM1637_DELAY; i++)
     {
-        asm("nop");
+        _NOP();
     }
 }
 
@@ -77,16 +62,16 @@ static void TM1637_write_byte(uint8_t data)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        *TM1637_CLK_PORT_REG &= ~(1 << TM1637_CLK_PORT_NUM);  // CLK to LOW
+        CLEAR_PORT(TM1637_CLK);  // CLK to LOW
         TM1637_cmd_delay();
 
         if (data & 1)
-            *TM1637_DIO_PORT_REG |= (1 << TM1637_DIO_PORT_NUM);  // DIO to HIGH
+            SET_PORT(TM1637_DIO);  // DIO to HIGH
         else
-            *TM1637_DIO_PORT_REG &= ~(1 << TM1637_DIO_PORT_NUM);  // DIO to LOW
+            CLEAR_PORT(TM1637_DIO);  // DIO to LOW
         TM1637_cmd_delay();
 
-        *TM1637_CLK_PORT_REG |= (1 << TM1637_CLK_PORT_NUM);  // CLK to HIGH
+        SET_PORT(TM1637_CLK);  // CLK to HIGH
         TM1637_cmd_delay();
 
         data >>= 1;
@@ -96,16 +81,16 @@ static void TM1637_write_byte(uint8_t data)
 static void TM1637_start()
 {
     // generate start condition
-    *TM1637_DIO_PORT_REG &= ~(1 << TM1637_DIO_PORT_NUM);  // DIO to LOW
+    CLEAR_PORT(TM1637_DIO);  // DIO to LOW
     TM1637_cmd_delay();
 }
 
 static void TM1637_stop()
 {
     // generate stop condition
-    *TM1637_CLK_PORT_REG |= (1 << TM1637_CLK_PORT_NUM);  // CLK to HIGH
+    SET_PORT(TM1637_CLK); // CLK to HIGH
     TM1637_cmd_delay();
-    *TM1637_DIO_PORT_REG |= (1 << TM1637_DIO_PORT_NUM);  // DIO to HIGH
+    SET_PORT(TM1637_DIO); // DIO to HIGH
     TM1637_cmd_delay();
 }
 
@@ -114,19 +99,23 @@ static uint8_t TM1637_read_ack()
     uint8_t ack;
 
     // read ACK from MCU
-    *TM1637_CLK_PORT_REG &= ~(1 << TM1637_CLK_PORT_NUM);  // CLK to LOW
-    *TM1637_DIO_PORT_REG &= ~(1 << TM1637_DIO_PORT_NUM);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
-    *TM1637_DIO_DDR &= ~(1 << TM1637_DIO_PORT_NUM);  // DIO as input
+    CLEAR_PORT(TM1637_CLK);  // CLK to LOW
+    CLEAR_PORT(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
+    CLEAR_DDR(TM1637_DIO);   // DIO as input
     TM1637_cmd_delay();
 
-    *TM1637_CLK_PORT_REG |= (1 << TM1637_CLK_PORT_NUM);  // CLK to HIGH
+    SET_PORT(TM1637_CLK);  // CLK to HIGH
     TM1637_cmd_delay();
 
-    // read DIO, should be 0 in fault free case
-    ack = (*TM1637_DIO_PIN_REG & (1 << TM1637_DIO_PORT_NUM)) == 0 ? 0 : 1;
+    // read DIO, should be 0 if ack is received
+    ack = READ_PIN(TM1637_DIO);
+    if (ack != 0)
+    {
+        // todo: do something if ack was not received
+    }
 
-    *TM1637_CLK_PORT_REG &= ~(1 << TM1637_CLK_PORT_NUM);  // CLK to LOW
-    *TM1637_DIO_DDR |= (1 << TM1637_DIO_PORT_NUM);  // DIO as output (already low)
+    CLEAR_PORT(TM1637_CLK);  // CLK to LOW
+    SET_DDR(TM1637_DIO);   // DIO as output (already low)
     TM1637_cmd_delay();
 
     return ack;
