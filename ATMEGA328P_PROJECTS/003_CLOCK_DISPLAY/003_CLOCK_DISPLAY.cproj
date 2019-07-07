@@ -41,7 +41,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <AAFDebugger>
-      <AAFDebugFiles xmlns="">
+      <AAFDebugFiles>
         <DebugFile>
           <path>\Debug\003_CLOCK_DISPLAY.lss</path>
           <AAFSetting>

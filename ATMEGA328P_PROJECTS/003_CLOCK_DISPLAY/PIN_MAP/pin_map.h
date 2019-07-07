@@ -24,8 +24,10 @@ typedef struct PIN_t {
 #define CLEAR_PORT(pin) (*(pin->PORT_ADDR) &= ~(1 << pin->PIN_NUM))
 #define CLEAR_PIN(pin)  (*(pin->PIN_ADDR)  &= ~(1 << pin->PIN_NUM))
 
-#define CHECK_PIN(pin)  ((*pin->PIN_ADDR & (1 << pin->PIN_NUM)) == 0)
+#define CHECK_PORT(pin) (*pin->PORT_ADDR & (1 << pin->PIN_NUM))
+#define CHECK_PIN(pin)  (*pin->PIN_ADDR  & (1 << pin->PIN_NUM))
 
-#define READ_PIN(pin)   (CHECK_PIN(pin) ? 0 : 1)
+#define READ_PORT(pin)  (CHECK_PORT(pin) ? 1 : 0)
+#define READ_PIN(pin)   (CHECK_PIN(pin) ? 1 : 0)
 
 #endif /* PIN_MAP_H_ */
