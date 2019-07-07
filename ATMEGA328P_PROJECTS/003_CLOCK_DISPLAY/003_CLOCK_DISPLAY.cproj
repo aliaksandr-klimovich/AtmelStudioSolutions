@@ -151,6 +151,12 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="PIN_MAP\avr_map.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="PIN_MAP\pin_map.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="TM1637\TM1637.c">
       <SubType>compile</SubType>
     </Compile>
@@ -159,6 +165,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="PIN_MAP" />
     <Folder Include="TM1637" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
