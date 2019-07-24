@@ -42,12 +42,12 @@ void TM1637_init(PIN *clk, PIN *dio)
     TM1637_DIO = dio;  // store DIO pin
 
     // set CLK pin as a high output
-    SET_PORT(TM1637_CLK);  // CLK to HIGH
-    SET_DDR(TM1637_CLK);  // CLK as output
+    SET_PORT_P(TM1637_CLK);  // CLK to HIGH
+    SET_DDR_P(TM1637_CLK);  // CLK as output
 
     // set DIO pin as a high output
-    SET_PORT(TM1637_DIO);  // DIO to HIGH
-    SET_DDR(TM1637_DIO);   // DIO as output
+    SET_PORT_P(TM1637_DIO);  // DIO to HIGH
+    SET_DDR_P(TM1637_DIO);   // DIO as output
 }
 
 static void TM1637_cmd_delay()
@@ -62,16 +62,16 @@ static void TM1637_write_byte(uint8_t data)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        CLEAR_PORT(TM1637_CLK);  // CLK to LOW
+        CLEAR_PORT_P(TM1637_CLK);  // CLK to LOW
         TM1637_cmd_delay();
 
         if (data & 1)
-            SET_PORT(TM1637_DIO);  // DIO to HIGH
+            SET_PORT_P(TM1637_DIO);  // DIO to HIGH
         else
-            CLEAR_PORT(TM1637_DIO);  // DIO to LOW
+            CLEAR_PORT_P(TM1637_DIO);  // DIO to LOW
         TM1637_cmd_delay();
 
-        SET_PORT(TM1637_CLK);  // CLK to HIGH
+        SET_PORT_P(TM1637_CLK);  // CLK to HIGH
         TM1637_cmd_delay();
 
         data >>= 1;
@@ -81,16 +81,16 @@ static void TM1637_write_byte(uint8_t data)
 static void TM1637_start()
 {
     // generate start condition
-    CLEAR_PORT(TM1637_DIO);  // DIO to LOW
+    CLEAR_PORT_P(TM1637_DIO);  // DIO to LOW
     TM1637_cmd_delay();
 }
 
 static void TM1637_stop()
 {
     // generate stop condition
-    SET_PORT(TM1637_CLK); // CLK to HIGH
+    SET_PORT_P(TM1637_CLK); // CLK to HIGH
     TM1637_cmd_delay();
-    SET_PORT(TM1637_DIO); // DIO to HIGH
+    SET_PORT_P(TM1637_DIO); // DIO to HIGH
     TM1637_cmd_delay();
 }
 
@@ -99,30 +99,30 @@ static uint8_t TM1637_read_ack()
     uint8_t ack;
 
     // read ACK from MCU
-    CLEAR_PORT(TM1637_CLK);  // CLK to LOW
-    CLEAR_PORT(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
-    CLEAR_DDR(TM1637_DIO);   // DIO as input
+    CLEAR_PORT_P(TM1637_CLK);  // CLK to LOW
+    CLEAR_PORT_P(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
+    CLEAR_DDR_P(TM1637_DIO);   // DIO as input
     TM1637_cmd_delay();
 
-    SET_PORT(TM1637_CLK);  // CLK to HIGH
+    SET_PORT_P(TM1637_CLK);  // CLK to HIGH
     TM1637_cmd_delay();
 
     // read DIO, should be 0 if ack is received
-    ack = READ_PIN(TM1637_DIO);
+    ack = READ_PIN_P(TM1637_DIO);
     if (ack != 0)
     {
         // todo: do something if ack was not received
     }
 
-    CLEAR_PORT(TM1637_CLK);  // CLK to LOW
-    SET_DDR(TM1637_DIO);   // DIO as output (already low)
+    CLEAR_PORT_P(TM1637_CLK);  // CLK to LOW
+    SET_DDR_P(TM1637_DIO);   // DIO as output (already low)
     TM1637_cmd_delay();
 
     return ack;
 }
 
 static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
-                                      uint8_t data[], uint8_t len)
+                                             uint8_t data[], uint8_t len)
 {
     TM1637_start();
     TM1637_write_byte(cmd1);
