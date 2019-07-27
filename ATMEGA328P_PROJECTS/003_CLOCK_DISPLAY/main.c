@@ -11,14 +11,23 @@
 
 #include "TM1637/TM1637.h"
 #include "PIN_MAP/pin_map.h"
-#include "PIN_MAP/avr_map.h"  // overrides <avr/io.h> pins
+#include "PIN_MAP/avr_map.h"  // overrides <avr/io.h> pin definitions
+
+
+// --- timer1 variables  ---
+
+#define OSCILLATOR_FREQUENCY 16000000UL
+#define TIMER1_CLK_IO_DIVIDER 1024UL
+const uint8_t TIMER1_COUNTER_TOP_VALUE = OSCILLATOR_FREQUENCY / TIMER1_CLK_IO_DIVIDER / 625UL;  // 625 should be set in `timer1_configure` function
+
+uint8_t timer1_counter = 0;
+
+inline void timer1_configure();
+inline void timer1_enable();
+inline void int0_configure();
 
 
 // --- tasking variables ---
-
-const uint8_t TIMER1_TOP = 16000000UL / 1024UL / 625UL;  // 625 should be set in configure_timer0() function
-uint8_t timer1_counter = 0;
-uint8_t task_500ms_counter = 0;
 
 typedef union TaskSwitch_t
 {
@@ -37,14 +46,27 @@ typedef union TaskSwitch_t
 } TaskSwitch;
 
 TaskSwitch task_switch;
+uint8_t task_500ms_counter = 0;
+
+void task_40ms();
+void task_200ms();
+void task_500ms();
+void task_1s();
 
 
 // --  led13 variables ---
 
 #define LED13 PB5
 
+inline void led13_configure();
+void led13_on();
+void led13_off();
+void led13_toggle();
+
 
 // --- button0 variables ---
+
+const uint8_t BUTTON0_LONG_PRESS_STOPWATCH_TOP_VALUE = 25;  // 25 * 40ms = 1s
 
 typedef enum ButtonSwitch_t
 {
@@ -54,44 +76,57 @@ typedef enum ButtonSwitch_t
 } ButtonSwitch;
 
 ButtonSwitch button0_switch = KEY_UNDEFINED;
+uint8_t button0_press_counter = 0;
+
+inline void button0_configure();
+inline void button0_press_short();
+inline void button0_press_long();
+inline void button0_key_down();
+inline void button0_key_up();
+inline void button0_handler();
 
 
-// --- timer0 variables ---
+// --- display variables ---
 
-int8_t min = 0;
-int8_t sec = 0;
-
-typedef enum CountDirection
+typedef enum DisplayState_t
 {
-    COUNT_DIRECTION_UP,
-    COUNT_DIRECTION_DOWN,
-    COUNT_NO_DIRECTION,
-} CountDirection;
+    DISPLAY_COUNT_DIRECTION_UP,
+    DISPLAY_COUNT_DIRECTION_DOWN,
+    DISPLAY_COUNT_STOP,
+    DISPLAY_RESET,
+} DisplayState;
 
-CountDirection count_direction = COUNT_DIRECTION_UP;
+DisplayState display_state = DISPLAY_COUNT_DIRECTION_UP;
+int8_t display_min = 0;
+int8_t display_sec = 0;
+
+void display_print(uint8_t colon);
+void display_time_out();
+void display_reset();
+inline void display_handler();
 
 
 // --- led13 functions ---
 
 void led13_on()
 {
-    SET_PORT(LED13);
+    PORT_SET(LED13);
 }
 
 void led13_off()
 {
-    CLEAR_PORT(LED13);
+    PORT_CLEAR(LED13);
 }
 
 void led13_toggle()
 {
-    SET_PIN(LED13);
+    PIN_SET(LED13);
 }
 
 
-// --- timer0 functions  ---
+// --- timer1 functions  ---
 
-inline void configure_timer1()
+inline void timer1_configure()
 {
     TCCR1B |= (1<< WGM12);  // set CTC mode
     OCR1AH = 0x02;
@@ -99,42 +134,55 @@ inline void configure_timer1()
     TIMSK1 |= (1 << OCIE1A);
 }
 
-inline void enable_timer1()
+inline void timer1_enable()
 {
     // set clock source
     TCCR1B |= (1 << CS10) | (1 << CS12);  // 1024
 }
 
 
-// --- button0 functions ---
+//  int0 functions
 
-inline void configure_int0()
+inline void int0_configure()
 {
-    EICRA |= (1 << ISC00); // | (1 << ISC00);  // any logical change on INT0 generates an interrupt request
+    EICRA |= (1 << ISC00); // any logical change on INT0 generates an interrupt request
     EIMSK |= (1 << INT0);  // enable INT0
 }
 
-inline void configure_button0()
-{
-    // PD2 as input, pull up
-    CLEAR_DDR(PD2);
-    SET_PORT(PD2);
+
+// --- button0 functions ---
+
+inline void button0_configure()
+{   
+    DDR_CLEAR(PD2);  // PD2 as input
+    PORT_SET(PD2);  // enable pull up resistor
 }
 
-inline void button0_on_key_down()
+inline void button0_press_short()
 {
-    //led13_toggle();
-    if (count_direction == COUNT_DIRECTION_UP)
-        count_direction = COUNT_DIRECTION_DOWN;
-    //else if (count_direction == COUNT_DIRECTION_DOWN)
-    //    count_direction = COUNT_DIRECTION_UP;
+    if (display_state == DISPLAY_COUNT_DIRECTION_UP)
+    {
+        display_state = DISPLAY_COUNT_DIRECTION_DOWN;
+    }
     else
-        count_direction = COUNT_DIRECTION_UP;
+    {
+        display_state = DISPLAY_COUNT_DIRECTION_UP;
+    }
 }
 
-inline void button0_on_key_up()
+inline void button0_press_long()
 {
-    //led13_toggle();
+    display_state = DISPLAY_RESET;
+}
+
+inline void button0_key_down()
+{
+
+}
+
+inline void button0_key_up()
+{
+
 }
 
 inline void button0_handler()
@@ -145,60 +193,84 @@ inline void button0_handler()
             break;
 
         case KEY_DOWN:
-            button0_on_key_down();
+            button0_key_down();
+            button0_press_counter = 0;
             break;
 
         case KEY_UP:
-            button0_on_key_up();
+            button0_key_up();
+            if (button0_press_counter < BUTTON0_LONG_PRESS_STOPWATCH_TOP_VALUE)
+            {
+                button0_press_short();
+            }
+            else
+            {
+                button0_press_long();
+            }
             break;
     }
 
     button0_switch = KEY_UNDEFINED;
+
+    // if button is pressed so long that the `button0_press_counter` reached the maximum value,
+    // need to continue to provide long press state
+    if ( ++ button0_press_counter == 255)
+    {
+        button0_press_counter = BUTTON0_LONG_PRESS_STOPWATCH_TOP_VALUE;
+    }
 }
 
 
 // --- led13 functions---
 
-void configure_led13()
+inline void led13_configure()
 {
-    SET_DDR(LED13);
-    CLEAR_PORT(LED13);
+    DDR_SET(LED13);
+    PORT_CLEAR(LED13);
 }
+
 
 //  --- display functions ---
 
 void display_print(uint8_t colon)
 {
     if (colon)
-        TM1637_print("%02u:%02u", min, sec);
+    {
+        TM1637_print("%02u:%02u", display_min, display_sec);
+    }
     else
-        TM1637_print("%02u %02u", min, sec);
+    {
+        TM1637_print("%02u %02u", display_min, display_sec);
+    }
 }
 
-void display_on_time_out()
+inline void display_time_out()
 {
-    led13_on();
+
+}
+
+inline void display_reset()
+{
+
 }
 
 inline void display_handler()
 {
-    switch (count_direction)
+    switch (display_state)
     {
-        case COUNT_NO_DIRECTION:
+        case DISPLAY_COUNT_STOP:
             break;
 
-        case COUNT_DIRECTION_UP:
+        case DISPLAY_COUNT_DIRECTION_UP:
             if (task_500ms_counter % 2)
             {
                 display_print(0);
-                if (++sec >= 60)
+                if (++display_sec >= 60)
                 {
-                    sec = 0;
-                    if (++min >= 60)
+                    display_sec = 0;
+                    if (++display_min >= 60)
                     {
-                        min = 0;
-                        //count_direction = COUNT_NO_DIRECTION;
-                        //display_on_time_out();
+                        display_min = 0;
                     }
                 }
             }
@@ -208,25 +280,35 @@ inline void display_handler()
             }
             break;
 
-        case COUNT_DIRECTION_DOWN:
+        case DISPLAY_COUNT_DIRECTION_DOWN:
             if (task_500ms_counter % 2)
             {
                 display_print(0);
-                if (--sec < 0)
+                if (--display_sec < 0)
                 {
-                    sec = 59;
-                    if (--min < 0)
+                    display_sec = 59;
+                    if (--display_min < 0)
                     {
-                        min = 0;
-                        sec = 0;
-                        count_direction = COUNT_NO_DIRECTION;
-                        display_on_time_out();
+                        display_min = 0;
+                        display_sec = 0;
+                        display_state = DISPLAY_COUNT_STOP;
+                        display_time_out();
                     }
                 }
             }
             else
             {
                 display_print(1);
+            }
+            break;
+
+        case DISPLAY_RESET:
+            if (task_500ms_counter % 2)
+            {
+                display_min = 0;
+                display_sec = 0;
+                display_state = DISPLAY_COUNT_DIRECTION_UP;
+                display_reset();
             }
             break;
     }
@@ -262,22 +344,22 @@ ISR(TIMER1_COMPA_vect)
 {
     timer1_counter++;
 
-    if (timer1_counter % (TIMER1_TOP / 25) == 0)
+    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 25) == 0)
     {
         task_switch.b.task_40ms_switch = 1;
     }
 
-    if (timer1_counter % (TIMER1_TOP / 5) == 0)
+    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 5) == 0)
     {
         task_switch.b.task_200ms_switch = 1;
     }
 
-    if (timer1_counter % (TIMER1_TOP / 2) == 0)
+    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 2) == 0)
     {
         task_switch.b.task_500ms_switch = 1;
     }
 
-    if (timer1_counter == TIMER1_TOP)
+    if (timer1_counter == TIMER1_COUNTER_TOP_VALUE)
     {
         task_switch.b.task_1s_switch = 1;
         timer1_counter = 0;
@@ -286,7 +368,7 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(INT0_vect, ISR_NOBLOCK)
 {
-    if (!CHECK_PIN(PD2))
+    if (!PIN_CHECK(PD2))
     {
         button0_switch = KEY_DOWN;
     }
@@ -297,7 +379,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
 }
 
 
-//  --- ==== *** MAIN *** ==== ---
+//  --- ===== ***  MAIN  *** ===== ---
 
 int main(void)
 {
@@ -305,13 +387,20 @@ int main(void)
 
     TM1637_init(&PC0, &PC1);
 
-    configure_int0();
-    configure_button0();
+    int0_configure();
+    button0_configure();
 
-    configure_led13();
+    led13_configure();
 
-    configure_timer1();
-    enable_timer1();
+    timer1_configure();
+    timer1_enable();
+
+    // small hard code
+    // 10 means 10 asm instructions, see .lss file
+    for (uint32_t i = 0; i != OSCILLATOR_FREQUENCY / 10; i++)  // 1s
+    {
+        asm("NOP");
+    }
 
     sei();
 
@@ -328,7 +417,6 @@ int main(void)
             task_200ms();
             task_switch.b.task_200ms_switch = 0;
         }
-
 
         if (task_switch.b.task_500ms_switch)
         {

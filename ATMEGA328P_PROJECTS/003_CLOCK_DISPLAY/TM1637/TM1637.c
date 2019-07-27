@@ -17,7 +17,7 @@ uint8_t TM1637_screen_on = 1;   // 0 (off) .. 1 (on),
 // First buffer_write command will switch on the screen if 1 (on) is set
 
 const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
-   // XGFEDCBA   (X is dp)
+   // XGFEDCBA   (X is DP)
     0b00111111,  // 0
     0b00000110,  // 1
     0b01011011,  // 2
@@ -42,19 +42,19 @@ void TM1637_init(PIN *clk, PIN *dio)
     TM1637_DIO = dio;  // store DIO pin
 
     // set CLK pin as a high output
-    SET_PORT_P(TM1637_CLK);  // CLK to HIGH
-    SET_DDR_P(TM1637_CLK);  // CLK as output
+    PORT_SET_P(TM1637_CLK);  // CLK to HIGH
+    DDR_SET_P(TM1637_CLK);  // CLK as output
 
     // set DIO pin as a high output
-    SET_PORT_P(TM1637_DIO);  // DIO to HIGH
-    SET_DDR_P(TM1637_DIO);   // DIO as output
+    PORT_SET_P(TM1637_DIO);  // DIO to HIGH
+    DDR_SET_P(TM1637_DIO);   // DIO as output
 }
 
 static void TM1637_cmd_delay()
 {
     for (uint16_t i=0; i < TM1637_DELAY; i++)
     {
-        _NOP();
+        asm("NOP");
     }
 }
 
@@ -62,16 +62,20 @@ static void TM1637_write_byte(uint8_t data)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        CLEAR_PORT_P(TM1637_CLK);  // CLK to LOW
+        PORT_CLEAR_P(TM1637_CLK);  // CLK to LOW
         TM1637_cmd_delay();
 
         if (data & 1)
-            SET_PORT_P(TM1637_DIO);  // DIO to HIGH
+        {
+            PORT_SET_P(TM1637_DIO);  // DIO to HIGH
+        }
         else
-            CLEAR_PORT_P(TM1637_DIO);  // DIO to LOW
+        {
+            PORT_CLEAR_P(TM1637_DIO);  // DIO to LOW
+        }
         TM1637_cmd_delay();
 
-        SET_PORT_P(TM1637_CLK);  // CLK to HIGH
+        PORT_SET_P(TM1637_CLK);  // CLK to HIGH
         TM1637_cmd_delay();
 
         data >>= 1;
@@ -81,16 +85,16 @@ static void TM1637_write_byte(uint8_t data)
 static void TM1637_start()
 {
     // generate start condition
-    CLEAR_PORT_P(TM1637_DIO);  // DIO to LOW
+    PORT_CLEAR_P(TM1637_DIO);  // DIO to LOW
     TM1637_cmd_delay();
 }
 
 static void TM1637_stop()
 {
     // generate stop condition
-    SET_PORT_P(TM1637_CLK); // CLK to HIGH
+    PORT_SET_P(TM1637_CLK); // CLK to HIGH
     TM1637_cmd_delay();
-    SET_PORT_P(TM1637_DIO); // DIO to HIGH
+    PORT_SET_P(TM1637_DIO); // DIO to HIGH
     TM1637_cmd_delay();
 }
 
@@ -99,23 +103,23 @@ static uint8_t TM1637_read_ack()
     uint8_t ack;
 
     // read ACK from MCU
-    CLEAR_PORT_P(TM1637_CLK);  // CLK to LOW
-    CLEAR_PORT_P(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
-    CLEAR_DDR_P(TM1637_DIO);   // DIO as input
+    PORT_CLEAR_P(TM1637_CLK);  // CLK to LOW
+    PORT_CLEAR_P(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
+    DDR_CLEAR_P(TM1637_DIO);   // DIO as input
     TM1637_cmd_delay();
 
-    SET_PORT_P(TM1637_CLK);  // CLK to HIGH
+    PORT_SET_P(TM1637_CLK);  // CLK to HIGH
     TM1637_cmd_delay();
 
     // read DIO, should be 0 if ack is received
-    ack = READ_PIN_P(TM1637_DIO);
+    ack = PIN_READ_P(TM1637_DIO);
     if (ack != 0)
     {
         // todo: do something if ack was not received
     }
 
-    CLEAR_PORT_P(TM1637_CLK);  // CLK to LOW
-    SET_DDR_P(TM1637_DIO);   // DIO as output (already low)
+    PORT_CLEAR_P(TM1637_CLK);  // CLK to LOW
+    DDR_SET_P(TM1637_DIO);   // DIO as output (already low)
     TM1637_cmd_delay();
 
     return ack;
@@ -179,9 +183,13 @@ void TM1637_print(const char * s, ...)
         c = buf[i];
 
         if (c == 0)  // buffer is null terminated
+        {
             break;
+        }
         else if (c >= '0' && c <= '9')
+        {
             c -= '0';
+        }
         else if (c >= 'a' && c <= 'f')
         {
             c -= 'a';
@@ -194,7 +202,7 @@ void TM1637_print(const char * s, ...)
         }
         else if ((c == ':' || c == '.') && i == 2)
         {
-            TM1637_buf[--j] |= 0x80;  // add "dp" to previous character
+            TM1637_buf[--j] |= 0x80;  // add DP to previous character
             continue;
         }
         else if ((c == ' ' || c == '_') && i == 2)
@@ -203,7 +211,9 @@ void TM1637_print(const char * s, ...)
             continue;
         }
         else
+        {
             continue;
+        }
 
         TM1637_buf[j] = TM1637_CHAR_TABLE[(uint8_t)c];
     }

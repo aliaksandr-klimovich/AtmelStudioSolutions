@@ -10,7 +10,7 @@
 #define PIN_MAP_H_
 
 
-typedef struct PIN_t {
+typedef struct {
     volatile uint8_t *DDR_ADDR;
     volatile uint8_t *PORT_ADDR;
     volatile uint8_t *PIN_ADDR;
@@ -18,34 +18,34 @@ typedef struct PIN_t {
 } PIN;
 
 
-#define SET_DDR_P(pin)    (*(pin->DDR_ADDR)  |= (1 << pin->PIN_NUM))
-#define SET_PORT_P(pin)   (*(pin->PORT_ADDR) |= (1 << pin->PIN_NUM))
-#define SET_PIN_P(pin)    (*(pin->PIN_ADDR)  |= (1 << pin->PIN_NUM))
+#define DDR_SET_P(pin)    (*(pin->DDR_ADDR)  |= (1 << pin->PIN_NUM))
+#define PORT_SET_P(pin)   (*(pin->PORT_ADDR) |= (1 << pin->PIN_NUM))
+#define PIN_SET_P(pin)    (*(pin->PIN_ADDR)  |= (1 << pin->PIN_NUM))
 
-#define CLEAR_DDR_P(pin)  (*(pin->DDR_ADDR)  &= ~(1 << pin->PIN_NUM))
-#define CLEAR_PORT_P(pin) (*(pin->PORT_ADDR) &= ~(1 << pin->PIN_NUM))
-#define CLEAR_PIN_P(pin)  (*(pin->PIN_ADDR)  &= ~(1 << pin->PIN_NUM))
+#define DDR_CLEAR_P(pin)  (*(pin->DDR_ADDR)  &= ~(1 << pin->PIN_NUM))
+#define PORT_CLEAR_P(pin) (*(pin->PORT_ADDR) &= ~(1 << pin->PIN_NUM))
+#define PIN_CLEAR_P(pin)  (*(pin->PIN_ADDR)  &= ~(1 << pin->PIN_NUM))
 
-#define CHECK_PORT_P(pin) (*pin->PORT_ADDR & (1 << pin->PIN_NUM))
-#define CHECK_PIN_P(pin)  (*pin->PIN_ADDR  & (1 << pin->PIN_NUM))
+#define PORT_CHECK_P(pin) (*pin->PORT_ADDR & (1 << pin->PIN_NUM))
+#define PIN_CHECK_P(pin)  (*pin->PIN_ADDR  & (1 << pin->PIN_NUM))
 
-#define READ_PORT_P(pin)  (CHECK_PORT_P(pin) ? 1 : 0)
-#define READ_PIN_P(pin)   (CHECK_PIN_P(pin) ? 1 : 0)
+#define PORT_READ_P(pin)  (PORT_CHECK_P(pin) ? 1 : 0)
+#define PIN_READ_P(pin)   (PIN_CHECK_P(pin) ? 1 : 0)
 
 
-#define SET_DDR(pin)    (*(pin.DDR_ADDR)  |= (1 << pin.PIN_NUM))
-#define SET_PORT(pin)   (*(pin.PORT_ADDR) |= (1 << pin.PIN_NUM))
-#define SET_PIN(pin)    (*(pin.PIN_ADDR)  |= (1 << pin.PIN_NUM))
+#define DDR_SET(pin)    (*(pin.DDR_ADDR)  |= (1 << pin.PIN_NUM))
+#define PORT_SET(pin)   (*(pin.PORT_ADDR) |= (1 << pin.PIN_NUM))
+#define PIN_SET(pin)    (*(pin.PIN_ADDR)  |= (1 << pin.PIN_NUM))
 
-#define CLEAR_DDR(pin)  (*(pin.DDR_ADDR)  &= ~(1 << pin.PIN_NUM))
-#define CLEAR_PORT(pin) (*(pin.PORT_ADDR) &= ~(1 << pin.PIN_NUM))
-#define CLEAR_PIN(pin)  (*(pin.PIN_ADDR)  &= ~(1 << pin.PIN_NUM))
+#define DDR_CLEAR(pin)  (*(pin.DDR_ADDR)  &= ~(1 << pin.PIN_NUM))
+#define PORT_CLEAR(pin) (*(pin.PORT_ADDR) &= ~(1 << pin.PIN_NUM))
+#define PIN_CLEAR(pin)  (*(pin.PIN_ADDR)  &= ~(1 << pin.PIN_NUM))
 
-#define CHECK_PORT(pin) (*(pin.PORT_ADDR) & (1 << pin.PIN_NUM))
-#define CHECK_PIN(pin)  (*(pin.PIN_ADDR)  & (1 << pin.PIN_NUM))
+#define PORT_CHECK(pin) (*(pin.PORT_ADDR) & (1 << pin.PIN_NUM))
+#define PIN_CHECK(pin)  (*(pin.PIN_ADDR)  & (1 << pin.PIN_NUM))
 
-#define READ_PORT(pin)  (CHECK_PORT(pin) ? 1 : 0)
-#define READ_PIN(pin)   (CHECK_PIN(pin) ? 1 : 0)
+#define PORT_READ(pin)  (PORT_CHECK(pin) ? 1 : 0)
+#define PIN_READ(pin)   (PIN_CHECK(pin) ? 1 : 0)
 
 
 #endif /* PIN_MAP_H_ */
