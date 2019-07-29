@@ -66,13 +66,14 @@ void led13_toggle();
 
 // --- button0 variables ---
 
-const uint8_t BUTTON0_LONG_PRESS_STOPWATCH_TOP_VALUE = 25;  // 25 * 40ms = 1s
+const uint8_t BUTTON0_LONG_PRESS_COUNTER_TOP_VALUE = 15;  // 15 * 40ms = 600ms
 
 typedef enum ButtonSwitch_t
 {
     KEY_UNDEFINED,
     KEY_UP,
     KEY_DOWN,
+    KEY_PRESS,
 } ButtonSwitch;
 
 ButtonSwitch button0_switch = KEY_UNDEFINED;
@@ -90,13 +91,14 @@ inline void button0_handler();
 
 typedef enum DisplayState_t
 {
+    DISPLAY_COUNT_STOP,
+    DISPLAY_COUNT_START,
     DISPLAY_COUNT_DIRECTION_UP,
     DISPLAY_COUNT_DIRECTION_DOWN,
-    DISPLAY_COUNT_STOP,
-    DISPLAY_RESET,
+    DISPLAY_COUNT_RESET,
 } DisplayState;
 
-DisplayState display_state = DISPLAY_COUNT_DIRECTION_UP;
+DisplayState display_state = DISPLAY_COUNT_STOP;
 int8_t display_min = 0;
 int8_t display_sec = 0;
 
@@ -104,6 +106,7 @@ void display_print(uint8_t colon);
 void display_time_out();
 void display_reset();
 inline void display_handler();
+inline void display_start();
 
 
 // --- led13 functions ---
@@ -130,7 +133,7 @@ inline void timer1_configure()
 {
     TCCR1B |= (1<< WGM12);  // set CTC mode
     OCR1AH = 0x02;
-    OCR1AL = 0x71 - 3;  // 625 +/- adj.: (+) slower (-) faster
+    OCR1AL = 0x71;  // 625
     TIMSK1 |= (1 << OCIE1A);
 }
 
@@ -153,26 +156,33 @@ inline void int0_configure()
 // --- button0 functions ---
 
 inline void button0_configure()
-{   
+{
     DDR_CLEAR(PD2);  // PD2 as input
     PORT_SET(PD2);  // enable pull up resistor
 }
 
 inline void button0_press_short()
 {
-    if (display_state == DISPLAY_COUNT_DIRECTION_UP)
+    switch (display_state)
     {
-        display_state = DISPLAY_COUNT_DIRECTION_DOWN;
-    }
-    else
-    {
-        display_state = DISPLAY_COUNT_DIRECTION_UP;
+        case DISPLAY_COUNT_DIRECTION_UP:
+            display_state = DISPLAY_COUNT_DIRECTION_DOWN;
+            break;
+        case DISPLAY_COUNT_DIRECTION_DOWN:
+            display_state = DISPLAY_COUNT_DIRECTION_UP;
+            break;
+        case DISPLAY_COUNT_STOP:
+            display_state = DISPLAY_COUNT_START;
+            break;
+        case DISPLAY_COUNT_START:
+        case DISPLAY_COUNT_RESET:
+            break;
     }
 }
 
 inline void button0_press_long()
 {
-    display_state = DISPLAY_RESET;
+    display_state = DISPLAY_COUNT_RESET;
 }
 
 inline void button0_key_down()
@@ -195,11 +205,12 @@ inline void button0_handler()
         case KEY_DOWN:
             button0_key_down();
             button0_press_counter = 0;
+            button0_switch = KEY_PRESS;
             break;
 
         case KEY_UP:
             button0_key_up();
-            if (button0_press_counter < BUTTON0_LONG_PRESS_STOPWATCH_TOP_VALUE)
+            if (1 <= button0_press_counter && button0_press_counter < BUTTON0_LONG_PRESS_COUNTER_TOP_VALUE)
             {
                 button0_press_short();
             }
@@ -207,16 +218,16 @@ inline void button0_handler()
             {
                 button0_press_long();
             }
+            button0_switch = KEY_UNDEFINED;
             break;
-    }
 
-    button0_switch = KEY_UNDEFINED;
-
-    // if button is pressed so long that the `button0_press_counter` reached the maximum value,
-    // need to continue to provide long press state
-    if ( ++ button0_press_counter == 255)
-    {
-        button0_press_counter = BUTTON0_LONG_PRESS_STOPWATCH_TOP_VALUE;
+        case KEY_PRESS:
+            button0_press_counter++;
+            if (button0_press_counter == 255)
+            {
+                button0_press_counter = BUTTON0_LONG_PRESS_COUNTER_TOP_VALUE;  
+            }
+            break;
     }
 }
 
@@ -246,7 +257,12 @@ void display_print(uint8_t colon)
 
 inline void display_time_out()
 {
+    led13_on();
+}
 
+inline void display_start()
+{
+    led13_off();
 }
 
 inline void display_reset()
@@ -260,6 +276,11 @@ inline void display_handler()
     {
         case DISPLAY_COUNT_STOP:
             break;
+        
+        case DISPLAY_COUNT_START:
+            display_start();
+            display_state = DISPLAY_COUNT_DIRECTION_UP;
+            // no break;   
 
         case DISPLAY_COUNT_DIRECTION_UP:
             if (task_500ms_counter % 2)
@@ -302,12 +323,12 @@ inline void display_handler()
             }
             break;
 
-        case DISPLAY_RESET:
+        case DISPLAY_COUNT_RESET:
             if (task_500ms_counter % 2)
             {
                 display_min = 0;
                 display_sec = 0;
-                display_state = DISPLAY_COUNT_DIRECTION_UP;
+                display_state = DISPLAY_COUNT_START;
                 display_reset();
             }
             break;
@@ -370,11 +391,31 @@ ISR(INT0_vect, ISR_NOBLOCK)
 {
     if (!PIN_CHECK(PD2))
     {
-        button0_switch = KEY_DOWN;
+        switch (button0_switch)
+        {
+            case KEY_UNDEFINED:
+                button0_switch = KEY_DOWN;
+                break;
+            case KEY_UP:
+            case KEY_DOWN:
+            case KEY_PRESS:
+                break;
+        }
     }
     else
     {
-        button0_switch = KEY_UP;
+        switch (button0_switch)
+        {
+            case KEY_UNDEFINED:
+            case KEY_UP:
+                break;
+            case KEY_DOWN:  // handler for button0 was not executed
+                button0_switch = KEY_UNDEFINED;
+                break;
+            case KEY_PRESS:
+                button0_switch = KEY_UP;
+                break;
+        }
     }
 }
 
@@ -383,7 +424,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
 
 int main(void)
 {
-    sleep_enable();
+    cli();
 
     TM1637_init(&PC0, &PC1);
 
@@ -397,12 +438,14 @@ int main(void)
 
     // small hard code
     // 10 means 10 asm instructions, see .lss file
-    for (uint32_t i = 0; i != OSCILLATOR_FREQUENCY / 10; i++)  // 1s
-    {
-        asm("NOP");
-    }
+//     for (uint32_t i = 0; i != OSCILLATOR_FREQUENCY / 10; i++)  // 1s
+//     {
+//         asm("NOP");
+//     }
 
+    sleep_enable();
     sei();
+    sleep_cpu();
 
     while (1)
     {
