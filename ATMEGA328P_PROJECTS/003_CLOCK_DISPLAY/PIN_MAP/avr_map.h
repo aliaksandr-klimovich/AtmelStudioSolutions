@@ -20,26 +20,26 @@
 #ifdef PB2
 #undef PB2
 #endif
-PIN PB2 = {&DDRB, &PORTB, &PINB, 2};
+PIN PB2;
 
 #ifdef PB5
 #undef PB5
 #endif
-PIN PB5 = {&DDRB, &PORTB, &PINB, 5};
+PIN PB5;
 
 #ifdef PC0
 #undef PC0
 #endif
-PIN PC0 = {&DDRC, &PORTC, &PINC, 0};
+PIN PC0;
 
 #ifdef PC1
 #undef PC1
 #endif
-PIN PC1 = {&DDRC, &PORTC, &PINC, 1};
+PIN PC1;
     
 #ifdef PD2
 #undef PD2
 #endif
-PIN PD2 = {&DDRD, &PORTD, &PIND, 2};
+PIN PD2;
 
 #endif /* AVR_MAP_H_ */

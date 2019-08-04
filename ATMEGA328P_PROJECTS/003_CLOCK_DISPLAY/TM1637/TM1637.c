@@ -7,7 +7,6 @@
 
 #include "TM1637.h"
 
-
 PIN *TM1637_CLK;
 PIN *TM1637_DIO;
 
@@ -17,7 +16,7 @@ uint8_t TM1637_screen_on = 1;   // 0 (off) .. 1 (on),
 // First buffer_write command will switch on the screen if 1 (on) is set
 
 const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
-   // XGFEDCBA   (X is DP)
+    // XGFEDCBA (X is DP)
     0b00111111,  // 0
     0b00000110,  // 1
     0b01011011,  // 2
@@ -38,14 +37,14 @@ const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
 
 void TM1637_init(PIN *clk, PIN *dio)
 {
-    TM1637_CLK = clk;  // store CLK pin
-    TM1637_DIO = dio;  // store DIO pin
+    TM1637_CLK = clk;  // Store CLK pin
+    TM1637_DIO = dio;  // Store DIO pin
 
-    // set CLK pin as a high output
+    // Set CLK pin as a high output
     PORT_SET_P(TM1637_CLK);  // CLK to HIGH
     DDR_SET_P(TM1637_CLK);  // CLK as output
 
-    // set DIO pin as a high output
+    // Set DIO pin as a high output
     PORT_SET_P(TM1637_DIO);  // DIO to HIGH
     DDR_SET_P(TM1637_DIO);   // DIO as output
 }
@@ -84,14 +83,14 @@ static void TM1637_write_byte(uint8_t data)
 
 static void TM1637_start()
 {
-    // generate start condition
+    // Generate start condition
     PORT_CLEAR_P(TM1637_DIO);  // DIO to LOW
     TM1637_cmd_delay();
 }
 
 static void TM1637_stop()
 {
-    // generate stop condition
+    // Generate stop condition
     PORT_SET_P(TM1637_CLK); // CLK to HIGH
     TM1637_cmd_delay();
     PORT_SET_P(TM1637_DIO); // DIO to HIGH
@@ -102,7 +101,7 @@ static uint8_t TM1637_read_ack()
 {
     uint8_t ack;
 
-    // read ACK from MCU
+    // Read ACK from MCU
     PORT_CLEAR_P(TM1637_CLK);  // CLK to LOW
     PORT_CLEAR_P(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
     DDR_CLEAR_P(TM1637_DIO);   // DIO as input
@@ -111,11 +110,11 @@ static uint8_t TM1637_read_ack()
     PORT_SET_P(TM1637_CLK);  // CLK to HIGH
     TM1637_cmd_delay();
 
-    // read DIO, should be 0 if ack is received
+    // Read DIO, should be 0 if ACK is received
     ack = PIN_READ_P(TM1637_DIO);
     if (ack != 0)
     {
-        // todo: do something if ack was not received
+        // TODO: do something if ACK was not received
     }
 
     PORT_CLEAR_P(TM1637_CLK);  // CLK to LOW
@@ -125,7 +124,7 @@ static uint8_t TM1637_read_ack()
     return ack;
 }
 
-static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
+static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3, 
                                              uint8_t data[], uint8_t len)
 {
     TM1637_start();
@@ -156,8 +155,8 @@ inline void TM1637_write_buffer(void)
         TM1637_CMD_DATA_WRITE,
         TM1637_CMD_INIT_ADDR,
         TM1637_CMD_BRIGHTNESS |
-            (TM1637_brightness & 0x07) |
-            (TM1637_screen_on ? TM1637_CMD_SCREEN_ON : TM1637_CMD_SCREEN_OFF),
+        (TM1637_brightness & 0x07) |
+        (TM1637_screen_on ? TM1637_CMD_SCREEN_ON : TM1637_CMD_SCREEN_OFF),
         TM1637_buf,
         TM1637_BUF_SIZE
     );
