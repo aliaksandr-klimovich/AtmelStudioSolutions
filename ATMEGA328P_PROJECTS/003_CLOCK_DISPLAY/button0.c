@@ -1,10 +1,3 @@
-/*
-* button0.c
-*
-* Created: 04.08.2019 17:17:13
-*  Author: Aliaksandr
-*/
-
 #include "button0.h"
 
 const uint8_t BUTTON0_LONG_PRESS_COUNTER_TOP_VALUE = 15;  // 15 * 40ms = 600ms
@@ -19,7 +12,7 @@ inline void button0_handler()
         {
             break;
         }
-        
+
         case KEY_DOWN:
         {
             button0_key_down();
@@ -57,12 +50,12 @@ inline void button0_handler()
 
 inline void button0_key_down()
 {
-
+    buzzer0_enable();
 }
 
 inline void button0_key_up()
 {
-
+    buzzer0_disable();
 }
 
 inline void button0_press_short()
@@ -101,7 +94,7 @@ inline void button0_configure()
 {
     DDR_CLEAR(PD2);  // PD2 as input
     PORT_SET(PD2);  // Enable pull up resistor
-    
+
     EICRA |= (1 << ISC00); // Any logical change on INT0 generates an interrupt request
     EIMSK |= (1 << INT0);  // Enable INT0
 }

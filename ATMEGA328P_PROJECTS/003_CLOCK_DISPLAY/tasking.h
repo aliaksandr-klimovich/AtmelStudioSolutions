@@ -1,11 +1,3 @@
-/*
- * tasking.h
- *
- * Created: 04.08.2019 18:04:25
- *  Author: Aliaksandr
- */ 
-
-
 #ifndef TASKING_H_
 #define TASKING_H_
 
@@ -16,9 +8,9 @@
 #include "button0.h"
 
 #define TIMER1_CLK_IO_DIVIDER 1024UL
-const uint8_t TIMER1_COUNTER_TOP_VALUE;
+extern const uint8_t TIMER1_COUNTER_TOP_VALUE;
 
-uint8_t timer1_counter;
+extern uint8_t timer1_counter;
 
 void timer1_configure();
 void timer1_enable();
@@ -39,8 +31,8 @@ typedef union TaskSwitch_t
     uint8_t u8;
 } TaskSwitch;
 
-TaskSwitch task_switch;
-uint8_t task_500ms_counter;
+extern TaskSwitch task_switch;
+extern uint8_t task_500ms_counter;
 
 void task_40ms();
 void task_200ms();

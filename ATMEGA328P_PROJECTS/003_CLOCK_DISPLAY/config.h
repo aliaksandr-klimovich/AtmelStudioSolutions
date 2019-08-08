@@ -1,11 +1,3 @@
-/*
- * config.h
- *
- * Created: 04.08.2019 18:27:21
- *  Author: Aliaksandr
- */ 
-
-
 #ifndef CONFIG_H_
 #define CONFIG_H_
 

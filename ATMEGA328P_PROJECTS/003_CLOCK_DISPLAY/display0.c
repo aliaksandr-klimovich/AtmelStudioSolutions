@@ -1,10 +1,3 @@
-/*
- * display0.c
- *
- * Created: 04.08.2019 17:41:46
- *  Author: Aliaksandr
- */ 
-
 #include "display0.h"
 
 DisplayState display0_state = DISPLAY_COUNT_STOP;

@@ -1,10 +1,3 @@
-/*
- * TM1637.h
- *
- * Created: 14.06.2019 22:27:54
- *  Author: Aliaksandr
- */
-
 #ifndef TM1637_H_
 #define TM1637_H_
 
@@ -23,16 +16,16 @@
 #define TM1637_CMD_SCREEN_ON    0b00001000
 #define TM1637_CMD_SCREEN_OFF   0
 
-#define TM1637_DELAY 0
+#define TM1637_DELAY  0
 
-#define TM1637_BUF_SIZE 4  // 4 stands here for clock display, max is 8 for this MCU
-uint8_t TM1637_buf[TM1637_BUF_SIZE];
+#define TM1637_BUF_SIZE  4  // 4 stands here for clock display, max is 8 for this MCU
+extern uint8_t TM1637_buf[TM1637_BUF_SIZE];
 
 #define TM1637_CHAR_TABLE_SIZE 16
-const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE];
+extern const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE];
 
-uint8_t TM1637_brightness;
-uint8_t TM1637_screen_on;
+extern uint8_t TM1637_brightness;
+extern uint8_t TM1637_screen_on;
 
 void TM1637_init(PIN *clk, PIN *dio);
 void TM1637_write_buffer(void);

@@ -1,11 +1,3 @@
-/*
- * display.h
- *
- * Created: 04.08.2019 17:40:40
- *  Author: Aliaksandr
- */ 
-
-
 #ifndef DISPLAY0_H_
 #define DISPLAY0_H_
 
@@ -23,7 +15,7 @@ typedef enum DisplayState_t
     DISPLAY_COUNT_RESET,
 } DisplayState;
 
-DisplayState display0_state;
+extern DisplayState display0_state;
 
 void display0_set(uint8_t colon);
 void display0_time_out();

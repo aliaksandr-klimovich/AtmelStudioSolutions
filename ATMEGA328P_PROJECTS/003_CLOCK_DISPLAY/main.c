@@ -1,10 +1,3 @@
-/*
-* 003_CLOCK_DISPLAY.c
-*
-* Created: 14.06.2019 22:02:55
-* Author : Aliaksandr
-*/
-
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
@@ -17,6 +10,7 @@
 #include "button0.h"
 #include "display0.h"
 #include "led0.h"
+#include "buzzer0.h"
 
 
 // Interrupt service routines
@@ -101,11 +95,13 @@ int main(void)
     TM1637_init(&PC0, &PC1);
     for (int i = 0; i < TM1637_BUF_SIZE; i++)
     {
-        TM1637_buf[i] = TM1637_CHAR_TABLE[0];  
+        TM1637_buf[i] = TM1637_CHAR_TABLE[0];
     }
     TM1637_write_buffer();
 
     button0_configure();
+
+    buzzer0_configure();
 
     led0_configure();
 
@@ -114,10 +110,10 @@ int main(void)
     timer1_enable();
 
     sleep_enable();
-    
+
     // Enable interrupts
     sei();
-    
+
     // Most simple sleep
     sleep_cpu();
 

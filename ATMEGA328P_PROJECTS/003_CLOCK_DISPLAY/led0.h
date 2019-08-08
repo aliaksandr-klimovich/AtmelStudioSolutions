@@ -1,11 +1,3 @@
-/*
- * led0.h
- *
- * Created: 04.08.2019 18:38:07
- *  Author: Aliaksandr
- */ 
-
-
 #ifndef LED0_H_
 #define LED0_H_
 

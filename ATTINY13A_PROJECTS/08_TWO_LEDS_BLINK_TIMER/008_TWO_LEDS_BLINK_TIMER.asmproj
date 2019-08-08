@@ -56,6 +56,10 @@
       <ToolName>Simulator</ToolName>
     </com_atmel_avrdbg_tool_simulator>
     <avrtoolinterface />
+    <AAFDebugger>
+      <AAFDebugFiles xmlns="">
+      </AAFDebugFiles>
+    </AAFDebugger>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>

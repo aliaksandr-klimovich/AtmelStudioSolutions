@@ -1,10 +1,3 @@
-/*
- * pin_map.h
- *
- * Created: 07.07.2019 10:46:07
- *  Author: Aliaksandr
- */
-
 #ifndef PIN_MAP_H_
 #define PIN_MAP_H_
 

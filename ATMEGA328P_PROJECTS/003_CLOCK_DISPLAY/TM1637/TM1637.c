@@ -1,10 +1,3 @@
-/*
- * TM1637.c
- *
- * Created: 14.06.2019 22:27:45
- *  Author: Aliaksandr
- */
-
 #include "TM1637.h"
 
 PIN *TM1637_CLK;
@@ -124,7 +117,7 @@ static uint8_t TM1637_read_ack()
     return ack;
 }
 
-static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3, 
+static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
                                              uint8_t data[], uint8_t len)
 {
     TM1637_start();

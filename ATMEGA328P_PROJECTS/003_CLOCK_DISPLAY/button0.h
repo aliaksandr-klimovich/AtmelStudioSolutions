@@ -1,17 +1,10 @@
-/*
- * button0.h
- *
- * Created: 04.08.2019 17:17:30
- *  Author: Aliaksandr
- */
-
-
 #ifndef BUTTON0_H_
 #define BUTTON0_H_
 
 #include <stdint.h>
 #include "PIN_MAP/avr_map.h"
 #include "display0.h"
+#include "buzzer0.h"
 
 typedef enum ButtonSwitch_t
 {
@@ -21,7 +14,7 @@ typedef enum ButtonSwitch_t
     KEY_PRESS,
 } ButtonSwitch;
 
-ButtonSwitch button0_switch;
+extern ButtonSwitch button0_switch;
 
 void button0_configure();
 void button0_press_short();

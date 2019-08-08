@@ -1,13 +1,9 @@
-/*
- * tasking.c
- *
- * Created: 04.08.2019 18:05:11
- *  Author: Aliaksandr
- */ 
-
 #include  "tasking.h"
 
 const uint8_t TIMER1_COUNTER_TOP_VALUE = OSCILLATOR_FREQUENCY / TIMER1_CLK_IO_DIVIDER / 625UL;  // 625 should be set in `timer1_configure` function
+uint8_t timer1_counter;
+TaskSwitch task_switch;
+uint8_t task_500ms_counter;
 
 inline void timer1_configure()
 {

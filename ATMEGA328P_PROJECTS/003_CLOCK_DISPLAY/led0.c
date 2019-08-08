@@ -1,10 +1,3 @@
-/*
- * led0.c
- *
- * Created: 04.08.2019 18:38:16
- *  Author: Aliaksandr
- */ 
-
 #include "led0.h"
 
 inline void led0_configure()
