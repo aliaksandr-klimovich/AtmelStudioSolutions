@@ -8,7 +8,7 @@
 do { \
     DDR_SET_P(pin); \
     PORTR_CLEAR_P(pin); \
-} while(0);
+} while(0)
 
 #define led_on(pin) PORTR_SET_P(pin)
 #define led_off(pin) PORTR_CLEAR_P(pin)
