@@ -2,10 +2,6 @@
 #define TASKING_H_
 
 #include <stdint.h>
-#include "PIN_MAP/avr_map.h"
-#include "config.h"
-#include "display0.h"
-#include "button0.h"
 
 #define TIMER1_CLK_IO_DIVIDER 1024UL
 extern const uint8_t TIMER1_COUNTER_TOP_VALUE;
@@ -38,5 +34,7 @@ void task_40ms();
 void task_200ms();
 void task_500ms();
 void task_1s();
+
+#include "../main.h"
 
 #endif /* TASKING_H_ */

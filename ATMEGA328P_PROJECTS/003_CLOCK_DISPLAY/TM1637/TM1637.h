@@ -27,8 +27,8 @@ extern const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE];
 extern uint8_t TM1637_brightness;
 extern uint8_t TM1637_screen_on;
 
-void TM1637_init(PIN *clk, PIN *dio);
-void TM1637_write_buffer(void);
+void TM1637_init(PIN * const clk, PIN * const dio);
+void TM1637_send_buffer(void);
 void TM1637_print(const char * s, ...);
 
 #endif /* TM1637_H_ */

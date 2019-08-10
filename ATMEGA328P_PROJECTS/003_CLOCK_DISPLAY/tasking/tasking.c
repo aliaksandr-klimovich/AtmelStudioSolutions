@@ -5,35 +5,35 @@ uint8_t timer1_counter;
 TaskSwitch task_switch;
 uint8_t task_500ms_counter;
 
-inline void timer1_configure()
+void timer1_configure()
 {
     TCCR1B |= (1<< WGM12);  // Set CTC mode
     OCR1AH = 0x02;
-    OCR1AL = 0x71;  // 625
+    OCR1AL = 0x71 - 1;  // 625 - 1
     TIMSK1 |= (1 << OCIE1A);
 }
 
-inline void timer1_enable()
+void timer1_enable()
 {
     TCCR1B |= (1 << CS10) | (1 << CS12);  // 1024
 }
 
-inline void task_40ms()
+void task_40ms()
 {
-    button0_handler();
+    button_handler(&button0);
 }
 
-inline void task_200ms()
+void task_200ms()
 {
 
 }
 
-inline void task_500ms()
+void task_500ms()
 {
-    display0_handler();
+    display_handler(&display0);
 }
 
-inline void task_1s()
+void task_1s()
 {
 
 }

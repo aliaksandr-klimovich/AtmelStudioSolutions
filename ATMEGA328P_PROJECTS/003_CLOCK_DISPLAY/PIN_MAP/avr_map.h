@@ -2,8 +2,11 @@
 #define AVR_MAP_H_
 
 /*
- * AVR stuff
- *
+
+ AVR pin mapping
+
+This module re-defines standard port mapping to PIN mapping.
+
  */
 
 #include <avr/io.h>

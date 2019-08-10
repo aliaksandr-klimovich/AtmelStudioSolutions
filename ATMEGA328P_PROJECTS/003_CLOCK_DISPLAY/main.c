@@ -1,18 +1,11 @@
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
+#include "main.h"  
 
-#include "PIN_MAP/avr_map.h"  // overrides <avr/io.h> pin definitions
-
-#include "TM1637/TM1637.h"
-
-#include "tasking.h"
-#include "button0.h"
-#include "display0.h"
-#include "led0.h"
-#include "buzzer0.h"
-
-
+Buzzer buzzer0 = {&PD3};
+    
+Button button0 = {&PD2};
+    
+Display display0 = {&PC0, &PC1};    
+    
 // Interrupt service routines
 
 ISR(TIMER1_COMPA_vect)
@@ -43,18 +36,18 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(INT0_vect, ISR_NOBLOCK)
 {
-    if (!PIN_CHECK(PD2))
+    if (!PINR_CHECK_P(button0.dio))
     {
-        switch (button0_switch)
+        switch (button0.state)
         {
-            case KEY_UNDEFINED:
+            case BUTTON_KEY_UNDEFINED:
             {
-                button0_switch = KEY_DOWN;
+                button0.state = BUTTON_KEY_DOWN;
                 break;
             }
-            case KEY_UP:
-            case KEY_DOWN:
-            case KEY_PRESS:
+            case BUTTON_KEY_UP:
+            case BUTTON_KEY_DOWN:
+            case BUTTON_KEY_PRESS:
             {
                 break;
             }
@@ -62,28 +55,28 @@ ISR(INT0_vect, ISR_NOBLOCK)
     }
     else
     {
-        switch (button0_switch)
+        switch (button0.state)
         {
-            case KEY_UNDEFINED:
-            case KEY_UP:
+            case BUTTON_KEY_UNDEFINED:
+            case BUTTON_KEY_UP:
             {
                 break;
             }
-            case KEY_DOWN:  // handler for button0 was not executed
+            case BUTTON_KEY_DOWN:  // handler for button0 was not executed
             {
-                button0_switch = KEY_UNDEFINED;
+                button0.state = BUTTON_KEY_UNDEFINED;
                 break;
             }
-            case KEY_PRESS:
+            case BUTTON_KEY_PRESS:
             {
-                button0_switch = KEY_UP;
+                button0.state = BUTTON_KEY_UP;
                 break;
             }
         }
     }
 }
 
-int main(void)
+int main()
 {
     // Disable all interrupts
     cli();
@@ -97,13 +90,13 @@ int main(void)
     {
         TM1637_buf[i] = TM1637_CHAR_TABLE[0];
     }
-    TM1637_write_buffer();
+    TM1637_send_buffer();
 
-    button0_configure();
+    button_init(&button0);
 
-    buzzer0_configure();
+    buzzer_init(&buzzer0);
 
-    led0_configure();
+    led_init(&led0);
 
     // Configure timer for tasking routines
     timer1_configure();
