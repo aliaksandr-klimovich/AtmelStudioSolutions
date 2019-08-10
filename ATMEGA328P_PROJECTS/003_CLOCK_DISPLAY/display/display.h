@@ -27,11 +27,10 @@ typedef struct Display_t
 void display_init(Display *display);
 void display_send_data(Display *display);
 void display_handler(Display *display);
-void display_time_out();
-void display_reset();
-void display_start();
+void display_start(Display *display);
+void display_reset(Display *display);
+void display_time_out(Display *display);
 
-// External dependencies
 #include "../main.h"
 
 #endif /* DISPLAY_H_ */

@@ -1,21 +1,25 @@
 #include  "tasking.h"
 
-const uint8_t TIMER1_COUNTER_TOP_VALUE = OSCILLATOR_FREQUENCY / TIMER1_CLK_IO_DIVIDER / 625UL;  // 625 should be set in `timer1_configure` function
 uint8_t timer1_counter;
 TaskSwitch task_switch;
+
 uint8_t task_500ms_counter;
 
-void timer1_configure()
+void timer1_init()
 {
-    TCCR1B |= (1<< WGM12);  // Set CTC mode
-    OCR1AH = 0x02;
-    OCR1AL = 0x71 - 1;  // 625 - 1
+    TCCR1B |= (1 << WGM12);  // Set CTC mode
+    OCR1AH = TIMER1_COUNTER_DIVIDER / 0x100;
+    OCR1AL = TIMER1_COUNTER_DIVIDER % 0x100 - 1;
     TIMSK1 |= (1 << OCIE1A);
 }
 
 void timer1_enable()
 {
-    TCCR1B |= (1 << CS10) | (1 << CS12);  // 1024
+#if TIMER1_CLK_IO_DIVIDER == TIMER1_CLK_IO_DIVIDER_1024
+    TCCR1B |= TIMER1_PRESCALER_1024;
+#elif TIMER1_CLK_IO_DIVIDER == TIMER1_CLK_IO_DIVIDER_256
+    TCCR1B |= TIMER1_PRESCALER_256;
+#endif
 }
 
 void task_40ms()

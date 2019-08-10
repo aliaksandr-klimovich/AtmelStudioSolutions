@@ -14,17 +14,17 @@ void display_send_data(Display *display)
     uint8_t minl = display->min % 10;
     uint8_t sech = display->sec / 10;
     uint8_t secl = display->sec % 10;
-    
+
     TM1637_buf[0] = TM1637_CHAR_TABLE[minh];
     TM1637_buf[1] = TM1637_CHAR_TABLE[minl];
     TM1637_buf[2] = TM1637_CHAR_TABLE[sech];
     TM1637_buf[3] = TM1637_CHAR_TABLE[secl];
-    
+
     if (display->colon)
     {
         TM1637_buf[1] |= 0x80;
     }
-    
+
     TM1637_send_buffer();
 }
 
@@ -36,14 +36,14 @@ void display_handler(Display *display)
         {
             break;
         }
-        
+
         case DISPLAY_COUNT_START:
         {
             display->state = DISPLAY_COUNT_DIRECTION_UP;
             display_start(display);
             // no break;
         }
-        
+
         case DISPLAY_COUNT_DIRECTION_UP:
         {
             if (task_500ms_counter % 2)
@@ -66,7 +66,7 @@ void display_handler(Display *display)
             }
             break;
         }
-        
+
         case DISPLAY_COUNT_DIRECTION_DOWN:
         {
             if (task_500ms_counter % 2)
@@ -92,7 +92,7 @@ void display_handler(Display *display)
             }
             break;
         }
-        
+
         case DISPLAY_COUNT_RESET:
         {
             if (task_500ms_counter % 2)
@@ -119,7 +119,7 @@ void display_reset(Display *display)
 {
     if (display == (Display *)(&display0))
     {
-        
+
     }
 }
 

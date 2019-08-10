@@ -1,33 +1,33 @@
-#include "main.h"  
+#include "main.h"
 
 Buzzer buzzer0 = {&PD3};
-    
+
 Button button0 = {&PD2};
-    
-Display display0 = {&PC0, &PC1};    
-    
+
+Display display0 = {&PC0, &PC1};
+
 // Interrupt service routines
 
 ISR(TIMER1_COMPA_vect)
 {
     timer1_counter++;
 
-    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 25) == 0)
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.04f) == 0)
     {
         task_switch.b.task_40ms_switch = 1;
     }
 
-    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 5) == 0)
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.2f) == 0)
     {
         task_switch.b.task_200ms_switch = 1;
     }
 
-    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 2) == 0)
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.5f) == 0)
     {
         task_switch.b.task_500ms_switch = 1;
     }
 
-    if (timer1_counter == TIMER1_COUNTER_TOP_VALUE)
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 1.f) == 0)
     {
         task_switch.b.task_1s_switch = 1;
         timer1_counter = 0;
@@ -99,7 +99,7 @@ int main()
     led_init(&led0);
 
     // Configure timer for tasking routines
-    timer1_configure();
+    timer1_init();
     timer1_enable();
 
     sleep_enable();

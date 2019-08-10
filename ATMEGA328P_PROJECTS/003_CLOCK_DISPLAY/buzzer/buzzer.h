@@ -3,8 +3,8 @@
 
 // Internal dependencies
 #include <stdint.h>
+#include <avr/io.h>
 #include "../pin_map/pin_map.h"
-#include "../pin_map/avr_map.h"
 
 typedef struct Buzzer_t 
 {
