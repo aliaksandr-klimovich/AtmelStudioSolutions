@@ -19,8 +19,8 @@ typedef struct Display_t
     PIN *clk;
     PIN *dio;
     DisplayState state;
-    uint8_t min;
-    uint8_t sec;
+    int8_t min;
+    int8_t sec;
     uint8_t colon;
 } Display;
 
