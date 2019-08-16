@@ -1,4 +1,7 @@
 #include "display.h"
+#include "../TM1637/TM1637.h"
+#include "../main.h"
+
 
 void display_init(Display *display)
 {
@@ -22,7 +25,7 @@ void display_send_data(Display *display)
 
     if (display->colon)
     {
-        TM1637_buf[1] |= 0x80;
+        TM1637_buf[1] |= TM1637_CHAR_TABLE[16];
     }
 
     TM1637_send_buffer();
@@ -39,17 +42,23 @@ void display_handler(Display *display)
 
         case DISPLAY_COUNT_START:
         {
-            display->state = DISPLAY_COUNT_DIRECTION_UP;
             display_start(display);
+            display->state = DISPLAY_COUNT_DIRECTION_UP;
+            display->min = 0;
+            display->sec = -1;
             // no break;
         }
 
         case DISPLAY_COUNT_DIRECTION_UP:
         {
-            if (task_500ms_counter % 2)
+            if (timer1_task_500ms_counter % 2)
             {
                 display->colon = 0;
                 display_send_data(display);
+                
+            }
+            else
+            {
                 if (++display->sec >= 60)
                 {
                     display->sec = 0;
@@ -58,9 +67,6 @@ void display_handler(Display *display)
                         display->min = 0;
                     }
                 }
-            }
-            else
-            {
                 display->colon = 1;
                 display_send_data(display);
             }
@@ -69,10 +75,14 @@ void display_handler(Display *display)
 
         case DISPLAY_COUNT_DIRECTION_DOWN:
         {
-            if (task_500ms_counter % 2)
+            if (timer1_task_500ms_counter % 2)
             {
                 display->colon = 0;
                 display_send_data(display);
+                
+            }
+            else
+            {
                 if (--display->sec < 0)
                 {
                     display->sec = 59;
@@ -84,9 +94,6 @@ void display_handler(Display *display)
                         display_time_out(display);
                     }
                 }
-            }
-            else
-            {
                 display->colon = 1;
                 display_send_data(display);
             }
@@ -95,12 +102,10 @@ void display_handler(Display *display)
 
         case DISPLAY_COUNT_RESET:
         {
-            if (task_500ms_counter % 2)
+            if (timer1_task_500ms_counter % 2)
             {
-                display->min = 0;
-                display->sec = 0;
-                display->state = DISPLAY_COUNT_START;
                 display_reset(display);
+                display->state = DISPLAY_COUNT_START;
             }
             break;
         }

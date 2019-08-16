@@ -1,8 +1,8 @@
 #ifndef LED_H_
 #define LED_H_
 
-// Internal dependencies
-#include "../pin_map/pin_map.h"
+#include "../pin_map/pin_type.h"
+
 
 #define led_init(pin) \
 do { \

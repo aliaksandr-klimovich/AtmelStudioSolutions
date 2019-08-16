@@ -1,15 +1,19 @@
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
 #include "TM1637.h"
+
 
 PIN *TM1637_CLK;
 PIN *TM1637_DIO;
 
-uint8_t TM1637_buf[TM1637_BUF_SIZE] = {0};
-uint8_t TM1637_brightness = 0;  // 0 .. 7
-uint8_t TM1637_screen_on = 1;   // 0 (off) .. 1 (on),
-// First buffer_write command will switch on the screen if 1 (on) is set
+uint8_t TM1637_buf[TM1637_BUF_SIZE];
+uint8_t TM1637_brightness;  // 0 .. 7
+uint8_t TM1637_screen_on = 1;  // 0 (off) .. 1 (on), first buffer_write command will switch on the screen if 1 (on) is set
 
-const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
-    // XGFEDCBA (X is DP)
+const uint8_t TM1637_CHAR_TABLE[] = {
+   // XGFEDCBA (X is DP)
     0b00111111,  // 0
     0b00000110,  // 1
     0b01011011,  // 2
@@ -20,12 +24,13 @@ const uint8_t TM1637_CHAR_TABLE[TM1637_CHAR_TABLE_SIZE] = {
     0b00000111,  // 7
     0b01111111,  // 8
     0b01101111,  // 9
-    0b01110111,  // A
-    0b01111100,  // b
-    0b00111001,  // C
-    0b01011110,  // d
-    0b01111001,  // E
-    0b01110001   // F
+    0b01110111,  // A = 10
+    0b01111100,  // b = 11
+    0b00111001,  // C = 12
+    0b01011110,  // d = 13
+    0b01111001,  // E = 14
+    0b01110001,  // F = 15
+    0b10000000,  // DP = 16  (colon)
 };
 
 void TM1637_init(PIN * const clk, PIN * const dio)
@@ -42,8 +47,9 @@ void TM1637_init(PIN * const clk, PIN * const dio)
     DDR_SET_P(TM1637_DIO);   // DIO as output
 }
 
-static void TM1637_cmd_delay()
+static inline void TM1637_cmd_delay()
 {
+    // Make a light delay between send commands for very fast transmission
     for (uint16_t i=0; i < TM1637_DELAY; i++)
     {
         asm("NOP");

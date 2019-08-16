@@ -1,10 +1,10 @@
 #ifndef BUTTON_H_
 #define BUTTON_H_
 
-// Internal dependencies
 #include <stdint.h>
-#include <avr/io.h>
-#include "../pin_map/pin_map.h"
+
+#include "../pin_map/pin_type.h"
+
 
 typedef enum ButtonState_t
 {
@@ -28,8 +28,5 @@ void button_key_down(Button *button);
 void button_key_up(Button *button);
 void button_press_short(Button *button);
 void button_press_long(Button *button);
-
-// External dependencies
-#include "../main.h"
 
 #endif /* BUTTON_H_ */

@@ -1,4 +1,8 @@
+#include <avr/io.h>
+
 #include "button.h"
+#include "../main.h"
+
 
 void button_init(Button *button)
 {
@@ -10,7 +14,7 @@ void button_init(Button *button)
     
     button->state = BUTTON_KEY_UNDEFINED;
     button->_press_counter = 0;
-    button->_long_press_top_value = 15;  // 15 * 40ms = 600ms
+    button->_long_press_top_value = 15;  // 15 * ... = ... ms
 }
 
 void button_handler(Button *button)
@@ -91,6 +95,7 @@ void button_press_short(Button *button)
             }
             case DISPLAY_COUNT_STOP:
             {
+                timer1_reset();
                 display0.state = DISPLAY_COUNT_START;
                 break;
             }

@@ -1,9 +1,10 @@
-#include  "tasking.h"
+#include  "timer1.h"
+#include "../main.h"
+
 
 uint8_t timer1_counter;
-TaskSwitch task_switch;
-
-uint8_t task_500ms_counter;
+TaskSwitch timer1_task_switch;
+uint8_t timer1_task_500ms_counter;
 
 void timer1_init()
 {
@@ -22,22 +23,17 @@ void timer1_enable()
 #endif
 }
 
-void task_40ms()
+void timer1_reset()
 {
-    button_handler(&button0);
+    // TBD
 }
 
-void task_200ms()
-{
-
-}
-
-void task_500ms()
+void timer1_task_500ms()
 {
     display_handler(&display0);
 }
 
-void task_1s()
+void timer1_task_40ms()
 {
-
+    button_handler(&button0);
 }

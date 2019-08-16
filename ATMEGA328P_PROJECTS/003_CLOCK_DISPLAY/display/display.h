@@ -2,8 +2,9 @@
 #define DISPLAY_H_
 
 #include <stdint.h>
-#include "../pin_map/pin_map.h"
-#include "../TM1637/TM1637.h"
+
+#include "../pin_map/pin_type.h"
+
 
 typedef enum DisplayState_t
 {
@@ -30,7 +31,5 @@ void display_handler(Display *display);
 void display_start(Display *display);
 void display_reset(Display *display);
 void display_time_out(Display *display);
-
-#include "../main.h"
 
 #endif /* DISPLAY_H_ */

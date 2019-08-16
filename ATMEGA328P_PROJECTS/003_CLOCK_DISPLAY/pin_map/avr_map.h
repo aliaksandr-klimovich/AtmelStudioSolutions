@@ -9,8 +9,7 @@ This module re-defines standard port mapping to PIN mapping.
 
  */
 
-#include <avr/io.h>
-#include "pin_map.h"
+#include "pin_type.h"
 
 #ifdef PB2
 #undef PB2

@@ -1,4 +1,11 @@
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
+
+#include "pin_map/avr_map.h"
+#include "TM1637/TM1637.h"
 #include "main.h"
+
 
 Buzzer buzzer0 = {&PD3};
 
@@ -12,25 +19,14 @@ ISR(TIMER1_COMPA_vect)
 {
     timer1_counter++;
 
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.04f) == 0)
+    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 25 /*40ms*/) == 0)
     {
-        task_switch.b.task_40ms_switch = 1;
+        timer1_task_switch.b.t40ms = 1;
     }
-
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.2f) == 0)
+    
+    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 2 /*500ms*/) == 0)
     {
-        task_switch.b.task_200ms_switch = 1;
-    }
-
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.5f) == 0)
-    {
-        task_switch.b.task_500ms_switch = 1;
-    }
-
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 1.f) == 0)
-    {
-        task_switch.b.task_1s_switch = 1;
-        timer1_counter = 0;
+        timer1_task_switch.b.t500ms = 1;
     }
 }
 
@@ -45,6 +41,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
                 button0.state = BUTTON_KEY_DOWN;
                 break;
             }
+            
             case BUTTON_KEY_UP:
             case BUTTON_KEY_DOWN:
             case BUTTON_KEY_PRESS:
@@ -62,11 +59,13 @@ ISR(INT0_vect, ISR_NOBLOCK)
             {
                 break;
             }
+            
             case BUTTON_KEY_DOWN:  // handler for button0 was not executed
             {
                 button0.state = BUTTON_KEY_UNDEFINED;
                 break;
             }
+            
             case BUTTON_KEY_PRESS:
             {
                 button0.state = BUTTON_KEY_UP;
@@ -85,20 +84,20 @@ int main()
     ACSR |= (1 << ACD);
 
     // Initialize display driver
-    TM1637_init(&PC0, &PC1);
-    for (int i = 0; i < TM1637_BUF_SIZE; i++)
-    {
-        TM1637_buf[i] = TM1637_CHAR_TABLE[0];
-    }
-    TM1637_send_buffer();
+    display_init(&display0);
+    // And fill screen with zeros
+    display_send_data(&display0);
 
+    // Initialize button
     button_init(&button0);
 
+    // Initialize buzzer
     buzzer_init(&buzzer0);
 
+    // Initialize led
     led_init(&led0);
 
-    // Configure timer for tasking routines
+    // Configure timer1 for tasking routines
     timer1_init();
     timer1_enable();
 
@@ -107,34 +106,22 @@ int main()
     // Enable interrupts
     sei();
 
-    // Most simple sleep
+    // Most simple sleep / wait for interrupt
     sleep_cpu();
 
     while (1)
     {
-        if (task_switch.b.task_40ms_switch)
+        if (timer1_task_switch.b.t40ms)
         {
-            task_40ms();
-            task_switch.b.task_40ms_switch = 0;
-        }
-
-        if (task_switch.b.task_200ms_switch)
+            timer1_task_40ms();
+            timer1_task_switch.b.t40ms = 0;   
+        }   
+             
+        if (timer1_task_switch.b.t500ms)
         {
-            task_200ms();
-            task_switch.b.task_200ms_switch = 0;
-        }
-
-        if (task_switch.b.task_500ms_switch)
-        {
-            task_500ms();
-            task_500ms_counter++;
-            task_switch.b.task_500ms_switch = 0;
-        }
-
-        if (task_switch.b.task_1s_switch)
-        {
-            task_1s();
-            task_switch.b.task_1s_switch = 0;
+            timer1_task_500ms();
+            timer1_task_500ms_counter++;
+            timer1_task_switch.b.t500ms = 0;
         }
 
         sleep_cpu();

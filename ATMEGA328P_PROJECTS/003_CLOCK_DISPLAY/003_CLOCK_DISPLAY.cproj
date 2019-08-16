@@ -207,13 +207,13 @@
     <Compile Include="pin_map\avr_map.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="pin_map\pin_map.h">
+    <Compile Include="pin_map\pin_type.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tasking\tasking.c">
+    <Compile Include="timer1\timer1.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tasking\tasking.h">
+    <Compile Include="timer1\timer1.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="TM1637\TM1637.c">
@@ -228,7 +228,7 @@
     <Folder Include="button" />
     <Folder Include="led" />
     <Folder Include="display" />
-    <Folder Include="tasking" />
+    <Folder Include="timer1" />
     <Folder Include="pin_map" />
     <Folder Include="TM1637" />
   </ItemGroup>
