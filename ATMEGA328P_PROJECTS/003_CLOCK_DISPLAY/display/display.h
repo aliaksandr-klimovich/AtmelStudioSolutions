@@ -9,10 +9,8 @@
 typedef enum DisplayState_t
 {
     DISPLAY_COUNT_STOP,
-    DISPLAY_COUNT_START,
     DISPLAY_COUNT_DIRECTION_UP,
     DISPLAY_COUNT_DIRECTION_DOWN,
-    DISPLAY_COUNT_RESET,
 } DisplayState;
 
 typedef struct Display_t
@@ -27,9 +25,12 @@ typedef struct Display_t
 
 void display_init(Display *display);
 void display_send_data(Display *display);
-void display_handler(Display *display);
-void display_start(Display *display);
-void display_reset(Display *display);
-void display_time_out(Display *display);
+
+void display0_on_timer1_trigger();
+void display0_on_button0_click();
+void display0_start();
+void display0_reset();
+void display0_on_time_top();
+void display0_on_time_zero();
 
 #endif /* DISPLAY_H_ */

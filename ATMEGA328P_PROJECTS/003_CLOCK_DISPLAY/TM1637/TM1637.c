@@ -9,7 +9,7 @@ PIN *TM1637_CLK;
 PIN *TM1637_DIO;
 
 uint8_t TM1637_buf[TM1637_BUF_SIZE];
-uint8_t TM1637_brightness;  // 0 .. 7
+uint8_t TM1637_brightness = 1;  // 0 .. 7
 uint8_t TM1637_screen_on = 1;  // 0 (off) .. 1 (on), first buffer_write command will switch on the screen if 1 (on) is set
 
 const uint8_t TM1637_CHAR_TABLE[] = {
@@ -30,7 +30,6 @@ const uint8_t TM1637_CHAR_TABLE[] = {
     0b01011110,  // d = 13
     0b01111001,  // E = 14
     0b01110001,  // F = 15
-    0b10000000,  // DP = 16  (colon)
 };
 
 void TM1637_init(PIN * const clk, PIN * const dio)

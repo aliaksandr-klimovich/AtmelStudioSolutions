@@ -3,7 +3,6 @@
 #include <avr/sleep.h>
 
 #include "pin_map/avr_map.h"
-#include "TM1637/TM1637.h"
 #include "main.h"
 
 
@@ -19,14 +18,19 @@ ISR(TIMER1_COMPA_vect)
 {
     timer1_counter++;
 
-    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 25 /*40ms*/) == 0)
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.04f) == 0)
     {
         timer1_task_switch.b.t40ms = 1;
     }
-    
-    if (timer1_counter % (TIMER1_COUNTER_TOP_VALUE / 2 /*500ms*/) == 0)
+
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.5f) == 0)
     {
         timer1_task_switch.b.t500ms = 1;
+    }
+
+    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 1.0f) == 0)
+    {
+        timer1_counter = 0;
     }
 }
 
@@ -41,7 +45,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
                 button0.state = BUTTON_KEY_DOWN;
                 break;
             }
-            
+
             case BUTTON_KEY_UP:
             case BUTTON_KEY_DOWN:
             case BUTTON_KEY_PRESS:
@@ -59,14 +63,15 @@ ISR(INT0_vect, ISR_NOBLOCK)
             {
                 break;
             }
-            
+
             case BUTTON_KEY_DOWN:  // handler for button0 was not executed
-            {
+            {   
+                // treat it like button was not pressed
                 button0.state = BUTTON_KEY_UNDEFINED;
                 break;
             }
-            
-            case BUTTON_KEY_PRESS:
+
+            case BUTTON_KEY_PRESS:  // button0 handler should switch key_down to key_pressed state in fault free case
             {
                 button0.state = BUTTON_KEY_UP;
                 break;
@@ -89,7 +94,7 @@ int main()
     display_send_data(&display0);
 
     // Initialize button
-    button_init(&button0);
+    button0_init();
 
     // Initialize buzzer
     buzzer_init(&buzzer0);
@@ -114,9 +119,9 @@ int main()
         if (timer1_task_switch.b.t40ms)
         {
             timer1_task_40ms();
-            timer1_task_switch.b.t40ms = 0;   
-        }   
-             
+            timer1_task_switch.b.t40ms = 0;
+        }
+
         if (timer1_task_switch.b.t500ms)
         {
             timer1_task_500ms();

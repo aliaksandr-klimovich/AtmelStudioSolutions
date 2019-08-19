@@ -12,6 +12,7 @@ typedef struct Buzzer_t
     uint8_t enabled;
 } Buzzer;
 
+
 void buzzer_init(Buzzer *buzzer);
 void buzzer_disable(Buzzer *buzzer);
 void buzzer_enable(Buzzer *buzzer);

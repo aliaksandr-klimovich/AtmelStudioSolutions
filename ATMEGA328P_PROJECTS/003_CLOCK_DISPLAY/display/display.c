@@ -5,6 +5,7 @@
 
 void display_init(Display *display)
 {
+    TM1637_init(display->clk, display->dio);
     display->state = DISPLAY_COUNT_STOP;
     display->min = 0;
     display->sec = 0;
@@ -25,51 +26,46 @@ void display_send_data(Display *display)
 
     if (display->colon)
     {
-        TM1637_buf[1] |= TM1637_CHAR_TABLE[16];
+        TM1637_buf[1] |= 0x80;
     }
 
     TM1637_send_buffer();
 }
 
-void display_handler(Display *display)
+void display0_on_timer1_trigger()
 {
-    switch (display->state)
+    switch (display0.state)
     {
         case DISPLAY_COUNT_STOP:
         {
             break;
         }
 
-        case DISPLAY_COUNT_START:
-        {
-            display_start(display);
-            display->state = DISPLAY_COUNT_DIRECTION_UP;
-            display->min = 0;
-            display->sec = -1;
-            // no break;
-        }
-
         case DISPLAY_COUNT_DIRECTION_UP:
         {
             if (timer1_task_500ms_counter % 2)
             {
-                display->colon = 0;
-                display_send_data(display);
-                
+                display0.colon = 0;
             }
-            else
+            else  /* first here */
             {
-                if (++display->sec >= 60)
+                if (++(display0.sec) > 59)
                 {
-                    display->sec = 0;
-                    if (++display->min >= 60)
+                    display0.sec = 0;
+                    if (++(display0.min) > 99)
                     {
-                        display->min = 0;
+                        display0.sec = 59;
+                        display0.min = 99;
+                        display0.colon = 0;
+                        display_send_data(&display0);
+                        display0.state = DISPLAY_COUNT_STOP;
+                        display0_on_time_top();
+                        break;
                     }
                 }
-                display->colon = 1;
-                display_send_data(display);
+                display0.colon = 1;
             }
+            display_send_data(&display0);
             break;
         }
 
@@ -77,61 +73,98 @@ void display_handler(Display *display)
         {
             if (timer1_task_500ms_counter % 2)
             {
-                display->colon = 0;
-                display_send_data(display);
-                
+                display0.colon = 0;
             }
-            else
+            else  /* first here */
             {
-                if (--display->sec < 0)
+                if (--display0.sec < 0)
                 {
-                    display->sec = 59;
-                    if (--display->min < 0)
-                    {
-                        display->min = 0;
-                        display->sec = 0;
-                        display->state = DISPLAY_COUNT_STOP;
-                        display_time_out(display);
-                    }
+                    display0.sec = 59;
+                    display0.min --;
                 }
-                display->colon = 1;
-                display_send_data(display);
+                
+                if (display0.min <= 0 && display0.sec <= 0)
+                {
+                    display0.sec = 0;
+                    display0.min = 0;
+                    display0.colon = 0;
+                    display_send_data(&display0);
+                    display0.state = DISPLAY_COUNT_STOP;
+                    display0_on_time_zero();
+                    break;
+                }
+                
+                display0.colon = 1;
             }
+            display_send_data(&display0);
             break;
         }
+    }
+}
 
-        case DISPLAY_COUNT_RESET:
+void display0_on_button0_click()
+{
+    switch (display0.state)
+    {
+        case DISPLAY_COUNT_STOP:
         {
-            if (timer1_task_500ms_counter % 2)
-            {
-                display_reset(display);
-                display->state = DISPLAY_COUNT_START;
-            }
+            timer1_disable();
+            timer1_reset();
+            display0.min = 0;
+            display0.sec = -1;
+            timer1_task_500ms_counter = 0;
+            display0.state = DISPLAY_COUNT_DIRECTION_UP;
+            display0_on_timer1_trigger();
+            timer1_task_500ms_counter ++;
+            timer1_enable();
+            led_off(&led0);
+            break;
+        }
+
+        case DISPLAY_COUNT_DIRECTION_UP:
+        {
+            timer1_disable();
+            timer1_reset();
+            timer1_task_500ms_counter = 0;
+            display0.sec++;
+            display0.state = DISPLAY_COUNT_DIRECTION_DOWN;
+            display0_on_timer1_trigger();
+            timer1_task_500ms_counter ++;
+            timer1_enable();
+            break;
+        }
+
+        case DISPLAY_COUNT_DIRECTION_DOWN:
+        {
+            timer1_disable();
+            timer1_reset();
+            timer1_task_500ms_counter = 0;
+            display0.sec--;
+            display0.state = DISPLAY_COUNT_DIRECTION_UP;
+            display0_on_timer1_trigger();
+            timer1_task_500ms_counter ++;
+            timer1_enable();
             break;
         }
     }
 }
 
-void display_start(Display *display)
+void display0_reset()
 {
-    if (display == (Display *)(&display0))
-    {
-        led_off(&led0);
-    }
+    display0.sec = 0;
+    display0.min = 0;
+    display0.colon = 0;
+    display0.state = DISPLAY_COUNT_STOP;
+    display_send_data(&display0);
+    led_off(&led0);
 }
 
-void display_reset(Display *display)
+void display0_on_time_top()
 {
-    if (display == (Display *)(&display0))
-    {
-
-    }
+    led_on(&led0);
 }
 
-void display_time_out(Display *display)
+void display0_on_time_zero()
 {
-    if (display == (Display *)(&display0))
-    {
-        led_on(&led0);
-    }
+    led_on(&led0);
 }

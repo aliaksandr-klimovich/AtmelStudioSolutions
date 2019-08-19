@@ -22,11 +22,12 @@ typedef struct Button_t
     uint8_t _long_press_top_value; 
 } Button; 
 
-void button_init(Button *button);
 void button_handler(Button *button);
-void button_key_down(Button *button);
-void button_key_up(Button *button);
-void button_press_short(Button *button);
-void button_press_long(Button *button);
+void button_on_key_down(Button *button);
+void button_on_key_up(Button *button);
+void button_on_press_short(Button *button);
+void button_on_press_long(Button *button);
+
+void button0_init();
 
 #endif /* BUTTON_H_ */

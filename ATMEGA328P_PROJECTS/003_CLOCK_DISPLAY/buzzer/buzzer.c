@@ -16,7 +16,6 @@ void buzzer_init(Buzzer *buzzer)
     // Configure tone
     OCR2A = 0x1F;  // Output compare match register
     TCCR2B = (1 << CS22);  // CLK/128 (from prescaler)
-
 }
 
 void buzzer_disable(Buzzer *buzzer)
