@@ -1,13 +1,13 @@
-#ifndef AVR_MAP_H_
-#define AVR_MAP_H_
-
 /*
 
- AVR pin mapping
+  AVR pin mapping
 
-This module re-defines standard port mapping to PIN mapping.
+This module re-defines standard port mapping (aka PB1, PD3...) to PIN (struct) mapping.
 
- */
+*/
+
+#ifndef AVR_MAP_H_
+#define AVR_MAP_H_
 
 #include "pin_type.h"
 

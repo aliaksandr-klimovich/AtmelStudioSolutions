@@ -5,12 +5,12 @@
 #include "pin_map/avr_map.h"
 #include "main.h"
 
+Buzzer buzzer0 = {.dio=&PD3};
 
-Buzzer buzzer0 = {&PD3};
+Button button0 = {.dio=&PD2};
 
-Button button0 = {&PD2};
-
-Display display0 = {&PC0, &PC1};
+TM1637_driver TM1637_driver0 = {.clk=&PC0, .dio=&PC1, .buf_size=4, .brightness=1, .screen_on=true};
+Display display0 = {.driver=&TM1637_driver0};
 
 // Interrupt service routines
 
@@ -19,19 +19,13 @@ ISR(TIMER1_COMPA_vect)
     timer1_counter++;
 
     if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.04f) == 0)
-    {
         timer1_task_switch.b.t40ms = 1;
-    }
 
     if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.5f) == 0)
-    {
         timer1_task_switch.b.t500ms = 1;
-    }
 
     if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 1.0f) == 0)
-    {
         timer1_counter = 0;
-    }
 }
 
 ISR(INT0_vect, ISR_NOBLOCK)
@@ -41,17 +35,13 @@ ISR(INT0_vect, ISR_NOBLOCK)
         switch (button0.state)
         {
             case BUTTON_KEY_UNDEFINED:
-            {
                 button0.state = BUTTON_KEY_DOWN;
                 break;
-            }
 
             case BUTTON_KEY_UP:
             case BUTTON_KEY_DOWN:
             case BUTTON_KEY_PRESS:
-            {
                 break;
-            }
         }
     }
     else
@@ -60,22 +50,16 @@ ISR(INT0_vect, ISR_NOBLOCK)
         {
             case BUTTON_KEY_UNDEFINED:
             case BUTTON_KEY_UP:
-            {
                 break;
-            }
 
             case BUTTON_KEY_DOWN:  // handler for button0 was not executed
-            {   
                 // treat it like button was not pressed
                 button0.state = BUTTON_KEY_UNDEFINED;
                 break;
-            }
 
             case BUTTON_KEY_PRESS:  // button0 handler should switch key_down to key_pressed state in fault free case
-            {
                 button0.state = BUTTON_KEY_UP;
                 break;
-            }
         }
     }
 }
@@ -97,7 +81,7 @@ int main()
     button0_init();
 
     // Initialize buzzer
-    buzzer_init(&buzzer0);
+    buzzer0_init();
 
     // Initialize led
     led_init(&led0);

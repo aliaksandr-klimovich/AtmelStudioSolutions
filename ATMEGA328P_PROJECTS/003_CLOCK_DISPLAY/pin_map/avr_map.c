@@ -1,3 +1,4 @@
+#include <avr/io.h>
 #include "avr_map.h"
 
 PIN PB2 = {&DDRB, &PORTB, &PINB, 2};

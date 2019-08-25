@@ -1,21 +1,19 @@
 #ifndef BUZZER_H_
 #define BUZZER_H_
 
-#include <stdint.h>
+#include <stdbool.h>
 
 #include "../pin_map/pin_type.h"
-
 
 typedef struct Buzzer_t
 {
     PIN *dio;
-    uint8_t enabled;
+    bool enabled;
 } Buzzer;
 
-
-void buzzer_init(Buzzer *buzzer);
-void buzzer_disable(Buzzer *buzzer);
-void buzzer_enable(Buzzer *buzzer);
-void buzzer_trigger(Buzzer *buzzer);
+void buzzer0_init();
+void buzzer0_disable();
+void buzzer0_enable();
+void buzzer0_trigger();
 
 #endif /* BUZZER_H_ */

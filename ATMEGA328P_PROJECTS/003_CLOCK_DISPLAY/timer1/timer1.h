@@ -2,9 +2,7 @@
 #define TASKING_H_
 
 #include <stdint.h>
-
 #include <avr/io.h>
-
 
 enum TIMER1_PRESCALER_t
 {
@@ -49,7 +47,6 @@ typedef union TaskSwitch_t
 extern uint8_t timer1_counter;
 extern TaskSwitch timer1_task_switch;
 extern uint8_t timer1_task_500ms_counter;
-
 
 void timer1_init();
 void timer1_enable();

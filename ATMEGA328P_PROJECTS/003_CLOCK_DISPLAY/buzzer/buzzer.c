@@ -1,14 +1,14 @@
 #include <avr/io.h>
 
 #include "buzzer.h"
+#include "../main.h"
 
-
-void buzzer_init(Buzzer *buzzer)
+void buzzer0_init()
 {
-    DDR_SET_P(buzzer->dio);
-    PORTR_SET_P(buzzer->dio);
+    DDR_SET_P(buzzer0.dio);
+    PORTR_SET_P(buzzer0.dio);
 
-    buzzer_disable(buzzer);
+    buzzer0_disable();
 
     // Set clear timer on compare match (CTC) mode
     TCCR2A = (1 << WGM21);
@@ -18,22 +18,21 @@ void buzzer_init(Buzzer *buzzer)
     TCCR2B = (1 << CS22);  // CLK/128 (from prescaler)
 }
 
-void buzzer_disable(Buzzer *buzzer)
+void buzzer0_disable()
 {
     // Disconnect output compare unit
     TCCR2A &= ~(1 << COM2B0);
-    buzzer->enabled = 0;
+    buzzer0.enabled = false;
 }
 
-void buzzer_enable(Buzzer *buzzer)
+void buzzer0_enable()
 {
     // Toggle OC2A on compare match
-
     TCCR2A |= (1 << COM2B0);
-    buzzer->enabled = 1;
+    buzzer0.enabled = true;
 }
 
-void buzzer_trigger(Buzzer *buzzer)
+void buzzer0_trigger()
 {
-    buzzer->enabled ? buzzer_disable(buzzer) : buzzer_enable(buzzer);
+    buzzer0.enabled ? buzzer0_disable() : buzzer0_enable();
 }

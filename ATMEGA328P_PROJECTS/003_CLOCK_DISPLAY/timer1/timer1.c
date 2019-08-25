@@ -1,7 +1,6 @@
 #include  "timer1.h"
 #include "../main.h"
 
-
 uint8_t timer1_counter;
 TaskSwitch timer1_task_switch;
 uint8_t timer1_task_500ms_counter;

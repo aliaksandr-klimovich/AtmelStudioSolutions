@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "TM1637.h"
 
+#define TM1637_CMD_DATA_WRITE   0b01000000
+#define TM1637_CMD_INIT_ADDR    0b11000000
+#define TM1637_CMD_BRIGHTNESS   0b10000000
+#define TM1637_CMD_SCREEN_ON    0b00001000
+#define TM1637_CMD_SCREEN_OFF   0
 
-PIN *TM1637_CLK;
-PIN *TM1637_DIO;
-
-uint8_t TM1637_buf[TM1637_BUF_SIZE];
-uint8_t TM1637_brightness = 1;  // 0 .. 7
-uint8_t TM1637_screen_on = 1;  // 0 (off) .. 1 (on), first buffer_write command will switch on the screen if 1 (on) is set
+#define TM1637_DELAY  0
 
 const uint8_t TM1637_CHAR_TABLE[] = {
    // XGFEDCBA (X is DP)
@@ -32,18 +33,17 @@ const uint8_t TM1637_CHAR_TABLE[] = {
     0b01110001,  // F = 15
 };
 
-void TM1637_init(PIN * const clk, PIN * const dio)
+void TM1637_init(TM1637_driver *driver)
 {
-    TM1637_CLK = clk;  // Store CLK pin
-    TM1637_DIO = dio;  // Store DIO pin
+    driver->buf = (uint8_t *)malloc(driver->buf_size * sizeof(uint8_t));  // check for null is absent!
 
     // Set CLK pin as a high output
-    PORTR_SET_P(TM1637_CLK);  // CLK to HIGH
-    DDR_SET_P(TM1637_CLK);  // CLK as output
+    PORTR_SET_P(driver->clk);  // CLK to HIGH
+    DDR_SET_P(driver->clk);    // CLK as output
 
     // Set DIO pin as a high output
-    PORTR_SET_P(TM1637_DIO);  // DIO to HIGH
-    DDR_SET_P(TM1637_DIO);   // DIO as output
+    PORTR_SET_P(driver->dio);  // DIO to HIGH
+    DDR_SET_P(driver->dio);    // DIO as output
 }
 
 static inline void TM1637_cmd_delay()
@@ -55,112 +55,110 @@ static inline void TM1637_cmd_delay()
     }
 }
 
-static void TM1637_write_byte(uint8_t data)
+static void TM1637_write_byte(TM1637_driver *driver, uint8_t data)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        PORTR_CLEAR_P(TM1637_CLK);  // CLK to LOW
+        PORTR_CLEAR_P(driver->clk);  // CLK to LOW
         TM1637_cmd_delay();
 
         if (data & 1)
-        {
-            PORTR_SET_P(TM1637_DIO);  // DIO to HIGH
-        }
+            PORTR_SET_P(driver->dio);  // DIO to HIGH
         else
-        {
-            PORTR_CLEAR_P(TM1637_DIO);  // DIO to LOW
-        }
+            PORTR_CLEAR_P(driver->dio);  // DIO to LOW
         TM1637_cmd_delay();
 
-        PORTR_SET_P(TM1637_CLK);  // CLK to HIGH
+        PORTR_SET_P(driver->clk);  // CLK to HIGH
         TM1637_cmd_delay();
 
         data >>= 1;
     }
 }
 
-static void TM1637_start()
+static void TM1637_start(TM1637_driver *driver)
 {
     // Generate start condition
-    PORTR_CLEAR_P(TM1637_DIO);  // DIO to LOW
+    PORTR_CLEAR_P(driver->dio);  // DIO to LOW
     TM1637_cmd_delay();
 }
 
-static void TM1637_stop()
+static void TM1637_stop(TM1637_driver *driver)
 {
     // Generate stop condition
-    PORTR_SET_P(TM1637_CLK); // CLK to HIGH
+    PORTR_SET_P(driver->clk); // CLK to HIGH
     TM1637_cmd_delay();
-    PORTR_SET_P(TM1637_DIO); // DIO to HIGH
+    PORTR_SET_P(driver->dio); // DIO to HIGH
     TM1637_cmd_delay();
 }
 
-static uint8_t TM1637_read_ack()
+static uint8_t TM1637_read_ack(TM1637_driver *driver)
 {
     uint8_t ack;
 
     // Read ACK from MCU
-    PORTR_CLEAR_P(TM1637_CLK);  // CLK to LOW
-    PORTR_CLEAR_P(TM1637_DIO);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
-    DDR_CLEAR_P(TM1637_DIO);   // DIO as input
+    PORTR_CLEAR_P(driver->clk);  // CLK to LOW
+    PORTR_CLEAR_P(driver->dio);  // DIO to LOW, intermediate state, consult atmega328p ref.man.
+    DDR_CLEAR_P(driver->dio);   // DIO as input
     TM1637_cmd_delay();
 
-    PORTR_SET_P(TM1637_CLK);  // CLK to HIGH
+    PORTR_SET_P(driver->clk);  // CLK to HIGH
     TM1637_cmd_delay();
 
     // Read DIO, should be 0 if ACK is received
-    ack = PINR_READ_P(TM1637_DIO);
+    ack = PINR_READ_P(driver->dio);
     if (ack != 0)
     {
         // TODO: do something if ACK was not received
     }
 
-    PORTR_CLEAR_P(TM1637_CLK);  // CLK to LOW
-    DDR_SET_P(TM1637_DIO);   // DIO as output (already low)
+    PORTR_CLEAR_P(driver->clk);  // CLK to LOW
+    DDR_SET_P(driver->dio);   // DIO as output (already low)
     TM1637_cmd_delay();
 
     return ack;
 }
 
-static void TM1637_write_SRAM_auto_increment(uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
-                                             uint8_t data[], uint8_t len)
+static void TM1637_write_SRAM_auto_increment(TM1637_driver *driver,
+                                             uint8_t cmd1, uint8_t cmd2, uint8_t cmd3,
+                                             uint8_t *data, uint8_t len)
 {
-    TM1637_start();
-    TM1637_write_byte(cmd1);
-    TM1637_read_ack();
-    TM1637_stop();
+    TM1637_start(driver);
+    TM1637_write_byte(driver, cmd1);
+    TM1637_read_ack(driver);
+    TM1637_stop(driver);
 
-    TM1637_start();
-    TM1637_write_byte(cmd2);
-    TM1637_read_ack();
+    TM1637_start(driver);
+    TM1637_write_byte(driver, cmd2);
+    TM1637_read_ack(driver);
     for (uint8_t i = 0; i < len; i++)
     {
-        TM1637_write_byte(data[i]);
-        TM1637_read_ack();
+        TM1637_write_byte(driver, data[i]);
+        TM1637_read_ack(driver);
     }
-    TM1637_stop();
+    TM1637_stop(driver);
 
-    TM1637_start();
-    TM1637_write_byte(cmd3);
-    TM1637_read_ack();
-    TM1637_stop();
+    TM1637_start(driver);
+    TM1637_write_byte(driver, cmd3);
+    TM1637_read_ack(driver);
+    TM1637_stop(driver);
 }
 
-inline void TM1637_send_buffer(void)
+inline void TM1637_send_buffer(TM1637_driver *driver)
 {
     TM1637_write_SRAM_auto_increment
     (
+        driver,
         TM1637_CMD_DATA_WRITE,
         TM1637_CMD_INIT_ADDR,
         TM1637_CMD_BRIGHTNESS |
-        (TM1637_brightness & 0x07) |
-        (TM1637_screen_on ? TM1637_CMD_SCREEN_ON : TM1637_CMD_SCREEN_OFF),
-        TM1637_buf,
-        TM1637_BUF_SIZE
+        (driver->brightness & 0x07) |
+        (driver->screen_on ? TM1637_CMD_SCREEN_ON : TM1637_CMD_SCREEN_OFF),
+        driver->buf,
+        driver->buf_size
     );
 }
 
-void TM1637_print(const char * s, ...)
+/*void TM1637_print(const char * s, ...)
 {
     char buf[TM1637_BUF_SIZE + 2] = {0};  // 2 = ':' + NUL terminator
     char *p_buf = buf;  // pointer to buf
@@ -175,7 +173,7 @@ void TM1637_print(const char * s, ...)
 
     memset(TM1637_buf, 0, TM1637_BUF_SIZE);
 
-    for (i=0, j=0; /* infinite loop */; i++, j++)
+    for (i=0, j=0; ; i++, j++)
     {
         c = buf[i];
 
@@ -216,4 +214,4 @@ void TM1637_print(const char * s, ...)
     }
 
     TM1637_send_buffer();
-}
+}*/
