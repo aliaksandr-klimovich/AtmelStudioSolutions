@@ -13,6 +13,13 @@ typedef enum DisplayState_t
     DISPLAY_COUNT_DIRECTION_DOWN,
 } DisplayState;
 
+typedef enum DisplayTrigger_t
+{
+    DISPLAY_COUNTING_TRIG,
+    DISPLAY_500_MS_TRIG,
+    DISPLAY_1000_MS_TRIG,
+} DisplayTrigger;
+
 typedef struct Display_t
 {
     TM1637_driver *driver;
@@ -20,6 +27,7 @@ typedef struct Display_t
     int8_t min;
     int8_t sec;
     bool colon;
+    int16_t tc;
 } Display;
 
 void display_init(Display *display);

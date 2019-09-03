@@ -33,7 +33,7 @@ typedef union TaskSwitch_t
         uint8_t t500ms: 1;
         uint8_t bit3:   1;
         uint8_t t40ms:  1;
-        uint8_t bit5:   1;
+        uint8_t t8ms:   1;
         uint8_t bit6:   1;
         uint8_t bit7:   1;
     } b;
@@ -46,14 +46,12 @@ typedef union TaskSwitch_t
 
 extern uint8_t timer1_counter;
 extern TaskSwitch timer1_task_switch;
-extern uint8_t timer1_task_500ms_counter;
 
 void timer1_init();
 void timer1_enable();
 void timer1_disable();
 void timer1_reset();
 
-void timer1_task_40ms();
-void timer1_task_500ms();
+void timer1_task_8ms();
 
 #endif /* TASKING_H_ */

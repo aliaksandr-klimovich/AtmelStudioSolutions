@@ -1,3 +1,22 @@
+/*
+  +----------------+
+  | Clock solution |
+  +----------------+
+
+  This program is made to simplify time counting process on the kitchen.
+
+  It contains several modules:
+
+  - Battery 18650 (3.5 V)
+  - DC-DC converter (from ~3 to 5 V)
+  - On/Off switch
+  - Atmega328P (arduino nano board with removed stabilizer, CH340 chip and power leds) - main MCU
+  - Button - simple button (SPST) with capacitor attached
+  - 4 digits display with a colon in the middle (clock display) under TM1637 chip control
+  - Buzzer, controlled by transistor
+
+*/
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
@@ -16,16 +35,7 @@ Display display0 = {.driver=&TM1637_driver0};
 
 ISR(TIMER1_COMPA_vect)
 {
-    timer1_counter++;
-
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.04f) == 0)
-        timer1_task_switch.b.t40ms = 1;
-
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 0.5f) == 0)
-        timer1_task_switch.b.t500ms = 1;
-
-    if (timer1_counter % (uint8_t)(TIMER1_COUNTER_TOP_VALUE * 1.0f) == 0)
-        timer1_counter = 0;
+    timer1_task_switch.b.t8ms = 1;
 }
 
 ISR(INT0_vect, ISR_NOBLOCK)
@@ -38,9 +48,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
                 button0.state = BUTTON_KEY_DOWN;
                 break;
 
-            case BUTTON_KEY_UP:
-            case BUTTON_KEY_DOWN:
-            case BUTTON_KEY_PRESS:
+            default:
                 break;
         }
     }
@@ -53,6 +61,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
                 break;
 
             case BUTTON_KEY_DOWN:  // handler for button0 was not executed
+            case BUTTON_KEY_DOWN_COUNTING:
                 // treat it like button was not pressed
                 button0.state = BUTTON_KEY_UNDEFINED;
                 break;
@@ -100,17 +109,10 @@ int main()
 
     while (1)
     {
-        if (timer1_task_switch.b.t40ms)
+        if (timer1_task_switch.b.t8ms)
         {
-            timer1_task_40ms();
-            timer1_task_switch.b.t40ms = 0;
-        }
-
-        if (timer1_task_switch.b.t500ms)
-        {
-            timer1_task_500ms();
-            timer1_task_500ms_counter++;
-            timer1_task_switch.b.t500ms = 0;
+            timer1_task_8ms();
+            timer1_task_switch.b.t8ms = 0;
         }
 
         sleep_cpu();

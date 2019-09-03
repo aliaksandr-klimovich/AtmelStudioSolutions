@@ -10,6 +10,7 @@ typedef enum ButtonState_t
     BUTTON_KEY_UNDEFINED,
     BUTTON_KEY_UP,
     BUTTON_KEY_DOWN,
+    BUTTON_KEY_DOWN_COUNTING,
     BUTTON_KEY_PRESS,
 } ButtonState;
 
@@ -18,6 +19,7 @@ typedef struct Button_t
     PIN *dio;
     ButtonState state;
     uint8_t _press_counter;
+    uint8_t _press_min_value;
     uint8_t _long_press_top_value;
 } Button;
 

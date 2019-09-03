@@ -9,6 +9,7 @@ void display_init(Display *display)
     display->min = 0;
     display->sec = 0;
     display->colon = false;
+    display->tc = 0;
 }
 
 void display_send_data(Display *display)
@@ -29,6 +30,23 @@ void display_send_data(Display *display)
     TM1637_send_buffer(display->driver);
 }
 
+DisplayTrigger display0_tc_handler()
+{
+    display0.tc ++;
+
+    if (display0.tc == (500 / 8))
+    {
+        return DISPLAY_500_MS_TRIG;
+    }
+    else if (display0.tc == (1000 / 8))
+    {
+        display0.tc = 0;
+        return DISPLAY_1000_MS_TRIG;
+    }
+
+    return DISPLAY_COUNTING_TRIG;
+}
+
 void display0_on_timer1_trigger()
 {
     switch (display0.state)
@@ -37,58 +55,69 @@ void display0_on_timer1_trigger()
             break;
 
         case DISPLAY_COUNT_DIRECTION_UP:
-            if (timer1_task_500ms_counter % 2)
+            switch (display0_tc_handler())
             {
-                display0.colon = false;
-            }
-            else  /* first here */
-            {
-                if (++(display0.sec) > 59)
-                {
-                    display0.sec = 0;
-                    if (++(display0.min) > 99)
+                case DISPLAY_COUNTING_TRIG:
+                    break;
+
+                case DISPLAY_500_MS_TRIG:
+                    display0.colon = false;
+                    display_send_data(&display0);
+                    break;
+
+                case DISPLAY_1000_MS_TRIG:
+                    if (++(display0.sec) > 59)
                     {
-                        display0.sec = 59;
-                        display0.min = 99;
-                        display0.colon = false;
-                        display_send_data(&display0);
-                        display0.state = DISPLAY_COUNT_STOP;
-                        display0_on_time_top();
-                        break;
+                        display0.sec = 0;
+                        if (++(display0.min) > 99)
+                        {
+                            display0.sec = 59;
+                            display0.min = 99;
+                            display_send_data(&display0);
+                            display0.state = DISPLAY_COUNT_STOP;
+                            display0_on_time_top();
+                            break;
+                        }
                     }
-                }
-                display0.colon = true;
+                    display0.colon = true;
+                    display_send_data(&display0);
+                    break;
             }
-            display_send_data(&display0);
             break;
 
         case DISPLAY_COUNT_DIRECTION_DOWN:
-            if (timer1_task_500ms_counter % 2)
+            switch (display0_tc_handler())
             {
-                display0.colon = false;
-            }
-            else  /* first here */
-            {
-                if (--display0.sec < 0)
-                {
-                    display0.sec = 59;
-                    display0.min --;
-                }
-                
-                if (display0.min <= 0 && display0.sec <= 0)
-                {
-                    display0.sec = 0;
-                    display0.min = 0;
+                case DISPLAY_COUNTING_TRIG:
+                    break;
+
+                case DISPLAY_500_MS_TRIG:
                     display0.colon = false;
                     display_send_data(&display0);
-                    display0.state = DISPLAY_COUNT_STOP;
-                    display0_on_time_zero();
                     break;
-                }
-                
-                display0.colon = true;
+
+                case DISPLAY_1000_MS_TRIG:
+                    if (--display0.sec < 0)
+                    {
+                        display0.sec = 59;
+                        display0.min --;
+                    }
+
+                    if ((display0.min == 0 && display0.sec == 0) || display0.min < 0)
+                    {
+                        display0.sec = 0;
+                        display0.min = 0;
+                        display0.colon = false;
+                        display_send_data(&display0);
+                        display0.state = DISPLAY_COUNT_STOP;
+                        display0_on_time_zero();
+                        break;
+                    }
+
+                    display0.colon = true;
+                    display_send_data(&display0);
+                    break;
             }
-            display_send_data(&display0);
             break;
     }
 }
@@ -98,38 +127,26 @@ void display0_on_button0_click()
     switch (display0.state)
     {
         case DISPLAY_COUNT_STOP:
-            timer1_disable();
-            timer1_reset();
             display0.min = 0;
-            display0.sec = -1;
-            timer1_task_500ms_counter = 0;
+            display0.sec = 0;
+            display0.colon = true;
+            display_send_data(&display0);
+            display0.tc = 0;
             display0.state = DISPLAY_COUNT_DIRECTION_UP;
-            display0_on_timer1_trigger();
-            timer1_task_500ms_counter ++;
-            timer1_enable();
-            led_off(&led0);
             break;
 
         case DISPLAY_COUNT_DIRECTION_UP:
-            timer1_disable();
-            timer1_reset();
-            timer1_task_500ms_counter = 0;
-            display0.sec++;
+            display0.colon = true;
+            display_send_data(&display0);
+            display0.tc = 0;
             display0.state = DISPLAY_COUNT_DIRECTION_DOWN;
-            display0_on_timer1_trigger();
-            timer1_task_500ms_counter ++;
-            timer1_enable();
             break;
 
         case DISPLAY_COUNT_DIRECTION_DOWN:
-            timer1_disable();
-            timer1_reset();
-            timer1_task_500ms_counter = 0;
-            display0.sec--;
+            display0.colon = true;
+            display_send_data(&display0);
+            display0.tc = 0;
             display0.state = DISPLAY_COUNT_DIRECTION_UP;
-            display0_on_timer1_trigger();
-            timer1_task_500ms_counter ++;
-            timer1_enable();
             break;
     }
 }
@@ -141,15 +158,14 @@ void display0_reset()
     display0.colon = false;
     display0.state = DISPLAY_COUNT_STOP;
     display_send_data(&display0);
-    led_off(&led0);
 }
 
 void display0_on_time_top()
 {
-    led_on(&led0);
+
 }
 
 void display0_on_time_zero()
 {
-    led_on(&led0);
+
 }

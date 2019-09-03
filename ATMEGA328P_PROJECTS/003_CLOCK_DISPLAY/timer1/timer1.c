@@ -20,7 +20,7 @@ void timer1_enable()
 #elif TIMER1_CLK_IO_DIVIDER == TIMER1_CLK_IO_DIVIDER_256
     TCCR1B = TIMER1_PRESCALER_256 | (1 << WGM12);
 #endif
-} 
+}
 
 void timer1_disable()
 {
@@ -33,12 +33,9 @@ void timer1_reset()
     timer1_counter = 0;
 }
 
-void timer1_task_40ms()
+void timer1_task_8ms()
 {
+    // order is important!
+    display0_on_timer1_trigger();
     button_handler(&button0);
-}
-
-void timer1_task_500ms()
-{
-    display0_on_timer1_trigger(&display0);
 }
