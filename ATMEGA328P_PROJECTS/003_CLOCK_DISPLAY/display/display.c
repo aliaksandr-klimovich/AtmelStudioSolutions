@@ -34,11 +34,11 @@ DisplayTrigger display0_tc_handler()
 {
     display0.tc ++;
 
-    if (display0.tc == (500 / 8))
+    if (display0.tc == (500 / TIMER1_TASK_TICK))
     {
         return DISPLAY_500_MS_TRIG;
     }
-    else if (display0.tc == (1000 / 8))
+    else if (display0.tc == (1000 / TIMER1_TASK_TICK))
     {
         display0.tc = 0;
         return DISPLAY_1000_MS_TRIG;
@@ -47,7 +47,7 @@ DisplayTrigger display0_tc_handler()
     return DISPLAY_COUNTING_TRIG;
 }
 
-void display0_on_timer1_trigger()
+void display0_handler()
 {
     switch (display0.state)
     {
@@ -162,7 +162,7 @@ void display0_reset()
 
 void display0_on_time_top()
 {
-
+    // will not be used
 }
 
 void display0_on_time_zero()

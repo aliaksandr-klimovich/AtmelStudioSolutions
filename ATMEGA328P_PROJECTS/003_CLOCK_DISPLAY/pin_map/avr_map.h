@@ -2,7 +2,7 @@
 
   AVR pin mapping
 
-This module re-defines standard port mapping (aka PB1, PD3...) to PIN (struct) mapping.
+  This module re-defines standard port mapping (aka PB1, PD3...) to PIN (struct) mapping.
 
 */
 

@@ -10,8 +10,6 @@ typedef const struct {
     uint8_t ID;
 } PIN;
 
-// Work with structure
-
 #define DDR_SET(pin)   (*((pin).DDR_ADDR)   |= (1 << (pin).ID))
 #define PORTR_SET(pin) (*((pin).PORTR_ADDR) |= (1 << (pin).ID))
 #define PINR_SET(pin)  (*((pin).PINR_ADDR)  |= (1 << (pin).ID))
@@ -26,7 +24,7 @@ typedef const struct {
 #define PORTR_READ(pin) (PORTR_CHECK(pin) ? 1 : 0)
 #define PINR_READ(pin)  (PINR_CHECK(pin)  ? 1 : 0)
 
-// Work with pointer
+// Pointers 
 
 #define DDR_SET_P(pin)   (*((pin)->DDR_ADDR)   |= (1 << (pin)->ID))
 #define PORTR_SET_P(pin) (*((pin)->PORTR_ADDR) |= (1 << (pin)->ID))

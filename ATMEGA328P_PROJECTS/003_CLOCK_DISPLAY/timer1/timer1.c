@@ -1,19 +1,16 @@
 #include  "timer1.h"
 #include "../main.h"
 
-uint8_t timer1_counter;
-TaskSwitch timer1_task_switch;
-uint8_t timer1_task_500ms_counter;
+uint8_t timer1_task_trigger_counter;
 
 void timer1_init()
 {
-    TCCR1B = (1 << WGM12);  // Set CTC mode
-    OCR1AH = TIMER1_COUNTER_DIVIDER / 0x100;
-    OCR1AL = TIMER1_COUNTER_DIVIDER % 0x100 - 1;
+    TCCR1B = (1 << WGM12);  // Set CTC mode 
+    OCR1A = TIMER1_COUNTER_DIVIDER;
     TIMSK1 = (1 << OCIE1A);
 }
 
-void timer1_enable()
+inline void timer1_enable()
 {
 #if TIMER1_CLK_IO_DIVIDER == TIMER1_CLK_IO_DIVIDER_1024
     TCCR1B = TIMER1_PRESCALER_1024 | (1 << WGM12);
@@ -22,20 +19,24 @@ void timer1_enable()
 #endif
 }
 
-void timer1_disable()
+inline void timer1_disable()
 {
     TCCR1B = TIMER1_PRESCALER_0 | (1 << WGM12);
 }
 
-void timer1_reset()
+inline void timer1_reset()
 {
     TCNT1 = 0;
-    timer1_counter = 0;
 }
+
+/*#define timer1_skipping \
+    if (TCNT1 > ((OCR1A * 80) / 100)) \
+        return;*/
 
 void timer1_task_8ms()
 {
-    // order is important!
-    display0_on_timer1_trigger();
+    // TODO: task management
+    display0_handler();
     button_handler(&button0);
+    buzzer0_handler();
 }

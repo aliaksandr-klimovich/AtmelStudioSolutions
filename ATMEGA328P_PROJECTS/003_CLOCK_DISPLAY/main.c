@@ -35,7 +35,7 @@ Display display0 = {.driver=&TM1637_driver0};
 
 ISR(TIMER1_COMPA_vect)
 {
-    timer1_task_switch.b.t8ms = 1;
+    timer1_task_trigger_counter ++;
 }
 
 ISR(INT0_vect, ISR_NOBLOCK)
@@ -66,7 +66,8 @@ ISR(INT0_vect, ISR_NOBLOCK)
                 button0.state = BUTTON_KEY_UNDEFINED;
                 break;
 
-            case BUTTON_KEY_PRESS:  // button0 handler should switch key_down to key_pressed state in fault free case
+            case BUTTON_KEY_PRESS:  // button0 handler should switch 
+                                    // key_down to key_pressed state in fault free case
                 button0.state = BUTTON_KEY_UP;
                 break;
         }
@@ -104,15 +105,27 @@ int main()
     // Enable interrupts
     sei();
 
-    // Most simple sleep / wait for interrupt
+    // Most simple sleep/wait for interrupt
     sleep_cpu();
 
     while (1)
     {
-        if (timer1_task_switch.b.t8ms)
+        if (timer1_task_trigger_counter)
         {
+            timer1_task_trigger_counter = 0;
             timer1_task_8ms();
-            timer1_task_switch.b.t8ms = 0;
+            if (timer1_task_trigger_counter)
+            {
+                // Error handling
+                timer1_disable();
+                led_on(&led0);
+                
+                uint16_t _tcnt1 = TCNT1;  // save current counter
+                display0.driver->buf[0] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 12)];
+                display0.driver->buf[1] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 8)];
+                display0.driver->buf[2] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 4)];
+                display0.driver->buf[3] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1)];
+            }
         }
 
         sleep_cpu();

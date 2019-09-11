@@ -34,7 +34,7 @@ void display_init(Display *display);
 void display_send_data(Display *display);
 
 void display0_reset();
-void display0_on_timer1_trigger();
+void display0_handler();
 void display0_on_button0_click();
 void display0_on_time_top();
 void display0_on_time_zero();
