@@ -10,6 +10,7 @@ typedef enum BuzzerState_t
     BUZZER_STOP,
     BUZZER_1_SHORT_CLICK,
     BUZZER_1_LONG_CLICK,
+    BUZZER_3_SHORT_CLICKS,
 } BuzzerState;
 
 typedef enum BuzzerTone_t
@@ -39,5 +40,6 @@ void buzzer0_handler();
 void buzzer0_1_short_click();
 void buzzer0_1_long_click();
 void buzzer0_change_tone();
+void buzzer0_3_short_clicks();
 
 #endif /* BUZZER_H_ */

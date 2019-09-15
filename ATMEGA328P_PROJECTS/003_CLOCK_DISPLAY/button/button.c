@@ -72,7 +72,8 @@ void button_on_key_down(Button *button)
 {
     if (button == (Button *)(&button0))
     {
-        buzzer0_1_short_click();
+        //buzzer0_1_short_click();
+        //buzzer0_3_short_clicks();
     }
 }
 

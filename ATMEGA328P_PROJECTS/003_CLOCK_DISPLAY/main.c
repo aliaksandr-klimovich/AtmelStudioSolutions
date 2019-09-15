@@ -125,6 +125,11 @@ int main()
                 display0.driver->buf[1] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 8)];
                 display0.driver->buf[2] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 4)];
                 display0.driver->buf[3] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1)];
+                
+                while (1)
+                {
+                    ;
+                }
             }
         }
 

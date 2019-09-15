@@ -1,6 +1,9 @@
 #include "display.h"
 #include "../main.h"
 
+uint8_t display0_min_top;
+uint8_t display0_sec_top;
+
 void display_init(Display *display)
 {
     TM1637_init(display->driver);
@@ -127,32 +130,74 @@ void display0_on_button0_click()
     switch (display0.state)
     {
         case DISPLAY_COUNT_STOP:
-            display0.min = 0;
-            display0.sec = 0;
-            display0.colon = true;
-            display_send_data(&display0);
             display0.tc = 0;
-            display0.state = DISPLAY_COUNT_DIRECTION_UP;
+            display0.colon = true;
+            if (display0_min_top == 0 && display0_sec_top == 0)
+            {
+                display0.min = 0;
+                display0.sec = 0;
+                display_send_data(&display0);
+                display0.state = DISPLAY_COUNT_DIRECTION_UP;
+            }
+            else
+            {
+                display0.min = display0_min_top;
+                display0.sec = display0_sec_top;
+                display_send_data(&display0);
+                display0.state = DISPLAY_COUNT_DIRECTION_DOWN;
+            }                            
             break;
 
         case DISPLAY_COUNT_DIRECTION_UP:
-            display0.colon = true;
-            display_send_data(&display0);
-            display0.tc = 0;
-            display0.state = DISPLAY_COUNT_DIRECTION_DOWN;
-            break;
+            if (display0_min_top == 0 && display0_sec_top == 0)
+            {
+                // save top value
+                display0_min_top = display0.min;
+                display0_sec_top = display0.sec;
+                // switch to count down
+                display0.colon = true;
+                display_send_data(&display0);
+                display0.tc = 0;
+                display0.state = DISPLAY_COUNT_DIRECTION_DOWN;
+            }
+            else 
+            {
+                // todo: error handler       
+            }
+            break;   
 
         case DISPLAY_COUNT_DIRECTION_DOWN:
-            display0.colon = true;
-            display_send_data(&display0);
-            display0.tc = 0;
-            display0.state = DISPLAY_COUNT_DIRECTION_UP;
+            if (display0_min_top == 0 && display0_sec_top == 0)
+            {
+                // todo: error handler
+            }
+            else
+            {
+                // convert current and top value to seconds
+                uint16_t total_sec_top = display0_sec_top + display0_min_top * 60;
+                uint16_t total_sec = display0.sec + display0.min * 60;
+                // get difference
+                uint16_t total_dif = total_sec_top - total_sec;
+                // convert it back to min and sec
+                display0.min = total_dif / 60;
+                display0.sec = total_dif % 60;
+                // and save it also to the top value
+                display0_min_top = display0.min;
+                display0_sec_top = display0.sec;
+                
+                display0.colon = true;
+                display_send_data(&display0);
+                display0.tc = 0;
+                //display0.state = DISPLAY_COUNT_DIRECTION_UP;
+            }                
             break;
     }
 }
 
 void display0_reset()
 {
+    display0_min_top = 0;
+    display0_sec_top = 0;
     display0.sec = 0;
     display0.min = 0;
     display0.colon = false;
@@ -167,5 +212,5 @@ void display0_on_time_top()
 
 void display0_on_time_zero()
 {
-
+    buzzer0_3_short_clicks();
 }

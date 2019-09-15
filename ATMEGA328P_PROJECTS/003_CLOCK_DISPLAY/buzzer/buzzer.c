@@ -101,6 +101,33 @@ void buzzer0_handler()
             }
             buzzer0.counter ++;
             break;
+        case BUZZER_3_SHORT_CLICKS:
+            #define BUZZER_3_SHORT_CLICKS_DUTY_CYCLE 80
+            #define BUZZER_3_SHORT_CLICKS_NUMBER_OF_CLICKS 3
+            
+            if (buzzer0.counter >= (BUZZER_3_SHORT_CLICKS_DUTY_CYCLE * 
+                (BUZZER_3_SHORT_CLICKS_NUMBER_OF_CLICKS * 2 - 1) / TIMER1_TASK_TICK))
+            {
+                buzzer0_disable();
+                buzzer0.counter = 0;
+                buzzer0.state = BUZZER_STOP;
+                break;  
+            }
+            else if ((buzzer0.counter % (BUZZER_3_SHORT_CLICKS_DUTY_CYCLE * 2 / TIMER1_TASK_TICK)) == 0)
+            {
+                buzzer0_enable();
+            }
+            else if (((buzzer0.counter + (BUZZER_3_SHORT_CLICKS_DUTY_CYCLE / TIMER1_TASK_TICK)) % 
+                (BUZZER_3_SHORT_CLICKS_DUTY_CYCLE * 2 / TIMER1_TASK_TICK)) == 0)
+            {
+                buzzer0_disable();
+            }
+            else  // count
+            {
+                // do nothing
+            }
+            buzzer0.counter ++;
+            break;
     }
 } 
 
@@ -117,7 +144,7 @@ void buzzer0_1_long_click()
 {
     if (buzzer0.state == BUZZER_STOP)
     {
-        buzzer0.tone = BUZZER_TONE_1;
+        buzzer0.tone = BUZZER_TONE_2;
         buzzer0.state = BUZZER_1_LONG_CLICK;
     }   
 }
@@ -126,3 +153,12 @@ void buzzer0_change_tone()
 {
     OCR2A = buzzer0.tone;  // Timer2 output compare match register
 }
+
+void buzzer0_3_short_clicks()
+{
+    if (buzzer0.state == BUZZER_STOP)
+    {
+        buzzer0.tone = BUZZER_TONE_2;
+        buzzer0.state = BUZZER_3_SHORT_CLICKS;
+    }
+} 
