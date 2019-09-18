@@ -35,7 +35,7 @@ void timer1_enable();
 void timer1_disable();
 void timer1_reset();
 
-// TIMER1_TICK is in ms
+// TIMER1_TICK is defined in ms
 #define TIMER1_TASK_TICK (1000 / TIMER1_COUNTER_TOP_VALUE) 
 void timer1_task_8ms();
 

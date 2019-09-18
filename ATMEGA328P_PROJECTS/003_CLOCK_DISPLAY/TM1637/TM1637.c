@@ -38,12 +38,12 @@ void TM1637_init(TM1637_driver *driver)
     driver->buf = (uint8_t *)malloc(driver->buf_size * sizeof(uint8_t));  // check for null is absent!
 
     // Set CLK pin as a high output 
-    PORTR_SET_P(driver->clk);  // CLK to HIGH   
-    DDR_SET_P(driver->clk);    // CLK as output 
+    PORTR_SET(driver->clk);  // CLK to HIGH   
+    DDR_SET(driver->clk);    // CLK as output 
 
     // Set DIO pin as a high output 
-    PORTR_SET_P(driver->dio);  // DIO to HIGH   
-    DDR_SET_P(driver->dio);    // DIO as output 
+    PORTR_SET(driver->dio);  // DIO to HIGH   
+    DDR_SET(driver->dio);    // DIO as output 
 }
 
 static inline void TM1637_cmd_delay()
@@ -59,16 +59,16 @@ static void TM1637_write_byte(TM1637_driver *driver, uint8_t data)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        PORTR_CLEAR_P(driver->clk);  // CLK to LOW 
+        PORTR_CLEAR(driver->clk);  // CLK to LOW 
         TM1637_cmd_delay();
 
         if (data & 1)
-            PORTR_SET_P(driver->dio);  // DIO to HIGH 
+            PORTR_SET(driver->dio);  // DIO to HIGH 
         else
-            PORTR_CLEAR_P(driver->dio);  // DIO to LOW 
+            PORTR_CLEAR(driver->dio);  // DIO to LOW 
         TM1637_cmd_delay();
 
-        PORTR_SET_P(driver->clk);  // CLK to HIGH 
+        PORTR_SET(driver->clk);  // CLK to HIGH 
         TM1637_cmd_delay();
 
         data >>= 1;
@@ -78,16 +78,16 @@ static void TM1637_write_byte(TM1637_driver *driver, uint8_t data)
 static void TM1637_start(TM1637_driver *driver)
 {
     // Generate start condition 
-    PORTR_CLEAR_P(driver->dio);  // DIO to LOW 
+    PORTR_CLEAR(driver->dio);  // DIO to LOW 
     TM1637_cmd_delay();
 }
 
 static void TM1637_stop(TM1637_driver *driver)
 {
     // Generate stop condition 
-    PORTR_SET_P(driver->clk); // CLK to HIGH 
+    PORTR_SET(driver->clk); // CLK to HIGH 
     TM1637_cmd_delay();
-    PORTR_SET_P(driver->dio); // DIO to HIGH 
+    PORTR_SET(driver->dio); // DIO to HIGH 
     TM1637_cmd_delay();
 }
 
@@ -96,23 +96,23 @@ static uint8_t TM1637_read_ack(TM1637_driver *driver)
     uint8_t ack;
 
     // Read ACK from MCU
-    PORTR_CLEAR_P(driver->clk);  // CLK to LOW 
-    PORTR_CLEAR_P(driver->dio);  // DIO to LOW, intermediate state, consult atmega328p ref.man. 
-    DDR_CLEAR_P(driver->dio);    // DIO as input 
+    PORTR_CLEAR(driver->clk);  // CLK to LOW 
+    PORTR_CLEAR(driver->dio);  // DIO to LOW, intermediate state, consult atmega328p ref.man. 
+    DDR_CLEAR(driver->dio);    // DIO as input 
     TM1637_cmd_delay();
 
-    PORTR_SET_P(driver->clk);  // CLK to HIGH 
+    PORTR_SET(driver->clk);  // CLK to HIGH 
     TM1637_cmd_delay();
 
     // Read DIO, should be 0 if ACK is received 
-    ack = PINR_READ_P(driver->dio);
+    ack = PINR_READ(driver->dio);
     if (ack != 0)
     {
-        // TODO: do something if ACK was not received
+        // TODO: error handling if ACK was not received
     }
 
-    PORTR_CLEAR_P(driver->clk);  // CLK to LOW 
-    DDR_SET_P(driver->dio);      // DIO as output (already low)  
+    PORTR_CLEAR(driver->clk);  // CLK to LOW 
+    DDR_SET(driver->dio);      // DIO as output (already low)  
     TM1637_cmd_delay();
 
     return ack;

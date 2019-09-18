@@ -28,7 +28,9 @@ void display_send_data(Display *display)
     display->driver->buf[3] = TM1637_CHAR_TABLE[secl];
 
     if (display->colon)
+    {
         display->driver->buf[1] |= 0x80;
+    }        
 
     TM1637_send_buffer(display->driver);
 }

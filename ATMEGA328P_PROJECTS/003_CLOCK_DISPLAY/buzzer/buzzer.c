@@ -5,16 +5,31 @@
 
 void buzzer_init(Buzzer *buzzer)
 {
-    DDR_SET_P(buzzer->dio);    // output
-    PORTR_SET_P(buzzer->dio);  // high
+    PIN_AS_OUTPUT_HIGH(buzzer->dio);
     buzzer->enabled = false;
     buzzer->state = BUZZER_STOP;
     buzzer->counter = 0;
     buzzer->tone = BUZZER_TONE_1;
 }
 
+inline void buzzer_enable(Buzzer *buzzer)
+{
+    buzzer->enabled = true;
+}
+
+inline void buzzer_disable(Buzzer *buzzer)
+{
+    buzzer->enabled = false;
+}
+
+inline void buzzer_trigger(Buzzer *buzzer)
+{
+    buzzer->enabled ? buzzer_disable(buzzer) : buzzer_enable(buzzer);
+}
+
 void buzzer0_init()
 {
+    // Default configuration for buzzer
     buzzer_init(&buzzer0);
 
     buzzer0_disable();
@@ -28,21 +43,11 @@ void buzzer0_init()
     TCCR2B = (1 << CS22);   // CLK/128 (from prescaler) 
 }
 
-void buzzer_disable(Buzzer *buzzer)
-{
-    buzzer->enabled = false;
-}
-
 void buzzer0_disable()
 {
     // Disconnect output compare unit 
     TCCR2A &= ~(1 << COM2B0);
     buzzer_disable(&buzzer0);
-}
-
-void buzzer_enable(Buzzer *buzzer)
-{
-    buzzer->enabled = true;
 }
 
 void buzzer0_enable()
@@ -54,11 +59,6 @@ void buzzer0_enable()
     buzzer_enable(&buzzer0);
 }
 
-void buzzer_trigger(Buzzer *buzzer)
-{
-    buzzer->enabled ? buzzer_disable(buzzer) : buzzer_enable(buzzer);
-}
-
 void buzzer0_handler()
 {
     switch (buzzer0.state)
@@ -66,11 +66,11 @@ void buzzer0_handler()
         case BUZZER_STOP:
             break;
         case BUZZER_1_SHORT_CLICK:
-            if (buzzer0.counter == 0)
+            if (buzzer0.counter == 0)  // count did not start yet
             {   
                 buzzer0_enable();
             }                
-            else if (buzzer0.counter >= (80 / TIMER1_TASK_TICK))
+            else if (buzzer0.counter >= (80 / TIMER1_TASK_TICK))  
             {
                 buzzer0_disable();
                 buzzer0.counter = 0;

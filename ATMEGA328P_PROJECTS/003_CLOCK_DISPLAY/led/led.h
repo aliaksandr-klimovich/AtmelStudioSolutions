@@ -5,12 +5,11 @@
 
 #define led_init(pin)       \
 do {                        \
-    DDR_SET_P(pin);         \
-    PORTR_CLEAR_P(pin);     \
+    PIN_AS_OUTPUT_LOW(pin); \
 } while(0)
 
-#define led_on(pin) PORTR_SET_P(pin)
-#define led_off(pin) PORTR_CLEAR_P(pin)
-#define led_toggle(pin) PINR_SET_P(pin)
+#define led_on(pin) PORTR_SET(pin)
+#define led_off(pin) PORTR_CLEAR(pin)
+#define led_toggle(pin) PINR_SET(pin)
 
 #endif /* LED_H_ */

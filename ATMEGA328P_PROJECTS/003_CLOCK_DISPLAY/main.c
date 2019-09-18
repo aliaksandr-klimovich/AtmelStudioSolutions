@@ -1,32 +1,32 @@
 /*
-  +----------------+
-  | Clock solution |
-  +----------------+
+  +--------------------------+
+  | Stopwatch-timer solution |
+  +--------------------------+
 
   This program is made to simplify time counting process on the kitchen.
 
-  It contains several modules:
+  It consists of several modules:
 
-  - Battery 18650 (3.5 V)
-  - DC-DC converter (from ~3 to 5 V)
-  - On/Off switch
+  - Battery 18650 (~3.6 V)
+  - Step up DC-DC converter (to 5 V)
+  - On/Off switch (DPST)
   - Atmega328P (arduino nano board with removed stabilizer, CH340 chip and power leds) - main MCU
   - Button - simple button (SPST) with capacitor attached
   - 4 digits display with a colon in the middle (clock display) under TM1637 chip control
-  - Buzzer, controlled by transistor
+  - Buzzer, controlled by a transistor
 
 */
 
-#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
-#include "pin_map/avr_map.h"
 #include "main.h"
 
 Buzzer buzzer0 = {.dio=&PD3};
 
-Button button0 = {.dio=&PD2};
+Button button0 = {.dio=&PD2, 
+                  .press_min_value=(40 / TIMER1_TASK_TICK), 
+                  .long_press_top_value=(800 / TIMER1_TASK_TICK)};
 
 TM1637_driver TM1637_driver0 = {.clk=&PC0, .dio=&PC1, .buf_size=4, .brightness=1, .screen_on=true};
 Display display0 = {.driver=&TM1637_driver0};
@@ -40,7 +40,7 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(INT0_vect, ISR_NOBLOCK)
 {
-    if (!PINR_CHECK_P(button0.dio))
+    if (!PINR_CHECK(button0.dio))
     {
         switch (button0.state)
         {
@@ -116,19 +116,26 @@ int main()
             timer1_task_8ms();
             if (timer1_task_trigger_counter)
             {
-                // Error handling
+                // Very simple error handling
+                
+                // Disable timers (including buzzer timer, i.e. timer2)
                 timer1_disable();
+                buzzer0_disable();
+                
+                // Enable alert (red led)
                 led_on(&led0);
                 
+                // Print current time counter to the display
                 uint16_t _tcnt1 = TCNT1;  // save current counter
                 display0.driver->buf[0] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 12)];
                 display0.driver->buf[1] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 8)];
                 display0.driver->buf[2] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1 >> 4)];
                 display0.driver->buf[3] = TM1637_CHAR_TABLE[(uint8_t)(_tcnt1)];
                 
+                // Stop
                 while (1)
                 {
-                    ;
+                    
                 }
             }
         }

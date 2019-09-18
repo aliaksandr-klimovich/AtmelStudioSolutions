@@ -18,9 +18,9 @@ typedef struct Button_t
 {
     PIN *dio;
     ButtonState state;
-    uint8_t _press_counter;
-    uint8_t _press_min_value;
-    uint8_t _long_press_top_value;
+    uint8_t press_counter;
+    uint8_t press_min_value;
+    uint8_t long_press_top_value;
 } Button;
 
 void button_handler(Button *button);

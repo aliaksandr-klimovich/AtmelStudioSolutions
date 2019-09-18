@@ -14,7 +14,8 @@ typedef enum BuzzerState_t
 } BuzzerState;
 
 typedef enum BuzzerTone_t
-{
+{  
+    // Note the prescaler!
     BUZZER_TONE_1 = 0x24,
     BUZZER_TONE_2 = 0x3A,
 } BuzzerTone;
@@ -23,9 +24,9 @@ typedef struct Buzzer_t
 {
     PIN *dio;
     bool enabled;
-    BuzzerState state;
-    uint8_t counter;  // counts one click time
-    uint8_t tone;
+    BuzzerState state;  // see BuzzerState
+    uint8_t counter;    // increases each handler execution (task tick)
+    uint8_t tone;       // see BuzzerTone
 } Buzzer;
 
 void buzzer_init(Buzzer *buzzer);

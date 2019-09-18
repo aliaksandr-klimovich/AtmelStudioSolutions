@@ -5,12 +5,9 @@
 
 void button_init(Button *button)
 {
-    DDR_CLEAR_P(button->dio);  // as input 
-    PORTR_SET_P(button->dio);  // pull up 
-    
-    button->_press_counter = 0;
-    button->_long_press_top_value = 800 / TIMER1_TASK_TICK;  // 800 ms
-    button->_press_min_value = 40 / TIMER1_TASK_TICK;        // 40 ms
+    PIN_AS_INPUT_PULLUP(button->dio); 
+    button->press_counter = 0;
+    // .press_min_value and .long_press_top_value should be set outside this function
 }    
 
 void button0_init()
@@ -29,13 +26,13 @@ void button_handler(Button *button)
             break;
 
         case BUTTON_KEY_DOWN:
-            button->_press_counter = 0;
+            button->press_counter = 0;
             button->state = BUTTON_KEY_DOWN_COUNTING;
             break;
 
         case BUTTON_KEY_DOWN_COUNTING:
-            button->_press_counter ++;
-            if (button->_press_min_value <= button->_press_counter)
+            button->press_counter ++;
+            if (button->press_min_value <= button->press_counter)
             {
                 button_on_key_down(button);
                 button->state = BUTTON_KEY_PRESS;
@@ -44,7 +41,7 @@ void button_handler(Button *button)
 
         case BUTTON_KEY_UP:
             button_on_key_up(button);
-            if (button->_press_counter < button->_long_press_top_value)
+            if (button->press_counter < button->long_press_top_value)
             {
                 button_on_press_short(button);
             }
@@ -56,9 +53,9 @@ void button_handler(Button *button)
             break;
 
         case BUTTON_KEY_PRESS:
-            if (button->_press_counter < button->_long_press_top_value)
+            if (button->press_counter < button->long_press_top_value)
             {
-                button->_press_counter ++;
+                button->press_counter ++;
             }
             else
             {
@@ -70,19 +67,12 @@ void button_handler(Button *button)
 
 void button_on_key_down(Button *button)
 {
-    if (button == (Button *)(&button0))
-    {
-        //buzzer0_1_short_click();
-        //buzzer0_3_short_clicks();
-    }
+
 }
 
 void button_on_key_up(Button *button)
 {
-    if (button == (Button *)(&button0))
-    {
-        //led_off(&led0);
-    }
+
 }
 
 void button_on_press_short(Button *button)
