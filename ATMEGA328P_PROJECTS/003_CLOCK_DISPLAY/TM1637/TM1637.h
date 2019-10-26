@@ -12,14 +12,15 @@ typedef struct TM1637_driver_t
 {
     PIN * clk;
     PIN * dio;
-    const uint8_t buf_size; // is equal to 4 for clock display 
-    uint8_t *buf;           // buffer of buf_size size 
-    uint8_t brightness;     // 0 .. 7  
-    bool screen_on;         // 0 (off) .. 1 (on), first buffer_write command will switch on 
-                            //   the screen if 1 (on) is set 
+    const uint8_t buf_size; // is equal to 4 for clock display
+    uint8_t *buf;           // buffer of buf_size size; zero position (index) is on the left of the screen
+    uint8_t brightness;     // 0 .. 7
+    bool screen_on;         // 0 (off) .. 1 (on), first buffer_write command will switch on
+                            //   the screen if 1 (on) is set
 } TM1637_driver;
 
-void TM1637_send_buffer(TM1637_driver *driver);
 void TM1637_init(TM1637_driver *driver);
+void TM1637_send_buffer(TM1637_driver *driver);
+void TM1637_send_uint16(TM1637_driver *driver, uint16_t value);
 
 #endif /* TM1637_H_ */
