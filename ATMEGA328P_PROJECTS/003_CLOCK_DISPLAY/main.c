@@ -129,6 +129,9 @@ int main()
         delay();
     }
 
+    // Disable ADC
+    ADCSRA = 0;
+
     // Fill screen with zeros
     display_send_data(&display0);
 
