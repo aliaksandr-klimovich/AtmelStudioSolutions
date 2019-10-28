@@ -45,7 +45,7 @@ float read_ADC_value()
 
 void delay()
 {
-    for (uint32_t i = 0; i < 1500000; i++)
+    for (uint32_t i = 0; i < 100000; i++)
     {
         asm("NOP");
     }
@@ -115,7 +115,7 @@ int main()
     display_init(&display0);
 
     // Show voltage on the battery for ~3 seconds
-    #define adc_max_counter 3
+    #define adc_max_counter 20
     for (uint8_t adc_counter = 0; adc_counter < adc_max_counter; adc_counter ++)
     {
         float fadc = read_ADC_value();
