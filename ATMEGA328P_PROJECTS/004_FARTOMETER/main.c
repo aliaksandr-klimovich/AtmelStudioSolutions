@@ -9,7 +9,7 @@
  * Helpers
  */
 
-enum TIMER0_PRESCALER
+enum Timer0_prescaler
 {
     TIMER0_PRESCALER_0    = (0 << CS02) | (0 << CS01) | (0 << CS00),  // timer0 stopped
     TIMER0_PRESCALER_1    = (0 << CS02) | (0 << CS01) | (1 << CS00),  // clk / 1 (no prescaling)
@@ -19,7 +19,7 @@ enum TIMER0_PRESCALER
     TIMER0_PRESCALER_1024 = (1 << CS02) | (0 << CS01) | (1 << CS00),  // clk / 1024
 };
 
-#define CTC_MODE (1 << WGM01)
+#define TIMER0_CTC_MODE (1 << WGM01)
 
 #define SET_BIT(reg, bit)   ((reg) |=  (1 << (bit)))
 #define CLEAR_BIT(reg, bit) ((reg) &= ~(1 << (bit)))
@@ -64,7 +64,7 @@ while(0)
  * CO2 sensor
  */
 
-enum CO2_SENSOR_MEASUREMENT_STATUS
+enum CO2_sensor_measurement_status
 {
     CO2_SENSOR_MEASUREMENT_DISABLED,
     CO2_SENSOR_MEASUREMENT_TRIGGERED,
@@ -76,7 +76,7 @@ enum CO2_SENSOR_MEASUREMENT_STATUS
     CO2_SENSOR_MEASUREMENT_ERROR,
 };
 
-enum CO2_SENSOR_MEASUREMENT_STATUS CO2_sensor_measurement_status;
+enum CO2_sensor_measurement_status CO2_sensor_measurement_status;
 uint16_t CO2_sensor_th;
 uint16_t CO2_sensor_tl;
 const uint16_t CO2_sensor_t_max_err = 5000;
@@ -187,7 +187,17 @@ ISR(TIMER0_COMPA_vect)
 {
     switch (CO2_sensor_measurement_status)
     {
-        case CO2_SENSOR_MEASUREMENT_DISABLED:
+        /*
+         *  This state machine is aimed to detect next pattern:
+         *  LOW - HIGH - LOW - HIGH
+         *   |      |     |      |
+         *   |      |     |      +---> to detect previous LOW end
+         *   |      |     +----------> detected LOW length is measured in ms
+         *   |      +----------------> detected HIGH state length is measured in ms
+         *   +-----------------------> to detect transition to next HIGH state
+         */
+
+        case CO2_SENSOR_MEASUREMENT_DISABLED:  // default state
         case CO2_SENSOR_MEASUREMENT_DONE:
         case CO2_SENSOR_MEASUREMENT_ERROR:
             break;
@@ -196,7 +206,7 @@ ISR(TIMER0_COMPA_vect)
             CO2_sensor_th = 0;
             CO2_sensor_tl = 0;
             CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_DETECTING_LOW_LEVEL;
-            // no break;
+            // no break
 
         case CO2_SENSOR_MEASUREMENT_DETECTING_LOW_LEVEL:
             if (READ_CO2_SENSOR_PIN() == 0)
@@ -261,7 +271,8 @@ ISR(TIMER0_COMPA_vect)
         CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_DONE ||
         CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_ERROR)
     {
-        TCCR0B = 0;  // Disable timer0
+        // Disable timer0
+        TCCR0B = 0;
     }
 }
 
@@ -282,10 +293,10 @@ int main(void)
     INIT_LED_PINS();
 
     // Initialize timer0
-    OCR0A = 249;  // to have interrupt each 1ms
-    TIMSK0 = (1 << OCIE0A);  // enable timer0 interrupt
+    OCR0A = 249;  // to have interrupt each 1 ms
+    TIMSK0 = (1 << OCIE0A);  // and enable timer0 interrupt on compare match with OCR0A
 
-    // Enable interrupts
+    // Enable all interrupts
     sei();
 
     while(1)
@@ -293,13 +304,13 @@ int main(void)
         // Set state machine to make measurement
         CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_TRIGGERED;
 
-        // Reset timer
+        // Reset timer0
         TCNT0 = 0;
 
-        // Enable timer
-        TCCR0B = TIMER0_PRESCALER_64 | CTC_MODE;
+        // Enable timer0
+        TCCR0B = TIMER0_PRESCALER_64 | TIMER0_CTC_MODE;
 
-        // Wait till measurement is completed
+        // Wait till the measurement is completed or an error is reported
         do
         {
             sleep_cpu();
@@ -307,54 +318,57 @@ int main(void)
         while (CO2_sensor_measurement_status != CO2_SENSOR_MEASUREMENT_DONE &&
                CO2_sensor_measurement_status != CO2_SENSOR_MEASUREMENT_ERROR);
 
-        // Here timer0 is disabled, no interrupt can occur
+        // Measurement is done or error is set. Timer0 interrupt have disabled timer0.
+        // No timer0 interrupt can occur from here.
 
-        // Check for errors
+        // Check for error
         if (CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_ERROR)
         {
-            SET_BUILDT_IN_LED();
             CLEAR_ALL_LEDS();
-            continue;  // retry
+            SET_BUILDT_IN_LED();
+            continue;  // retry to make measurement
         }
         else
         {
             CLEAR_BUILDT_IN_LED();
         }
 
-        // Here CO2_sensor_measurement_status can be only CO2_SENSOR_MEASUREMENT_DONE
+        // From here CO2_sensor_measurement_status can only be equal to CO2_SENSOR_MEASUREMENT_DONE
 
-        // Calculate CO2 ppm (particles per million)
+        // Calculate CO2 ppm (particles per million), see reference manual for details
         uint32_t Cppm = (2000 * ((uint32_t)CO2_sensor_th - 2)) / ((uint32_t)CO2_sensor_th + (uint32_t)CO2_sensor_tl - 4);
 
         // Set LEDs accordingly
-        #define RANGE1 500
-        #define RANGE2 800
-        #define RANGE3 1100
-        #define RANGE4 1400
+        #define LIMIT1 500
+        #define LIMIT2 800
+        #define LIMIT3 1100
+        #define LIMIT4 1400
 
-        if (0 <= Cppm && Cppm < RANGE1)
+        if (0 <= Cppm && Cppm < LIMIT1)
         {
             SET_ONLY_GREEN_LED();
         }
-        else if (RANGE1 <= Cppm && Cppm < RANGE2)
+        else if (LIMIT1 <= Cppm && Cppm < LIMIT2)
         {
             SET_GREEN_LED();
             SET_YELLOW_LED();
             CLEAR_RED_LED();
         }
-        else if (RANGE2 <= Cppm && Cppm < RANGE3)
+        else if (LIMIT2 <= Cppm && Cppm < LIMIT3)
         {
             SET_ONLY_YELLOW_LED();
         }
-        else if (RANGE3 <= Cppm && Cppm < RANGE4)
+        else if (LIMIT3 <= Cppm && Cppm < LIMIT4)
         {
             CLEAR_GREEN_LED();
             SET_YELLOW_LED();
             SET_RED_LED();
         }
-        else  // CO2ppm >= RANGE4
+        else  // CO2ppm >= LIMIT4
         {
             SET_ONLY_RED_LED();
         }
+
+        // Continue to take measurements
     }
 }
