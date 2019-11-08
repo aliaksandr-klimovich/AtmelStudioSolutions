@@ -79,7 +79,9 @@ enum CO2_sensor_measurement_status
 enum CO2_sensor_measurement_status CO2_sensor_measurement_status;
 uint16_t CO2_sensor_th;
 uint16_t CO2_sensor_tl;
-const uint16_t CO2_sensor_t_max_err = 5000;
+const uint16_t CO2_sensor_t_min_err =  800;  // 1 s - 5 %
+const uint16_t CO2_sensor_t_max_err = 1200;  // 1 s + 5 %
+uint32_t Cppm;
 
 #define CO2_SENSOR_DDR          DDRB
 #define CO2_SENSOR_PORTR        PORTB
@@ -92,6 +94,11 @@ const uint16_t CO2_sensor_t_max_err = 5000;
 /*
  * LEDs
  */
+
+#define BLUE_LED_DDR        DDRD
+#define BLUE_LED_PORTR      PORTD
+#define BLUE_LED_PINR       PIND
+#define BLUE_LED_PIN_ID     2
 
 #define GREEN_LED_DDR       DDRD
 #define GREEN_LED_PORTR     PORTD
@@ -116,6 +123,7 @@ const uint16_t CO2_sensor_t_max_err = 5000;
 #define INIT_LED_PINS()                                                             \
 do                                                                                  \
 {                                                                                   \
+    PIN_AS_OUTPUT_LOW(BLUE_LED_DDR,     BLUE_LED_PORTR,     BLUE_LED_PIN_ID);       \
     PIN_AS_OUTPUT_LOW(GREEN_LED_DDR,    GREEN_LED_PORTR,    GREEN_LED_PIN_ID);      \
     PIN_AS_OUTPUT_LOW(YELLOW_LED_DDR,   YELLOW_LED_PORTR,   YELLOW_LED_PIN_ID);     \
     PIN_AS_OUTPUT_LOW(RED_LED_DDR,      RED_LED_PORTR,      RED_LED_PIN_ID);        \
@@ -123,55 +131,22 @@ do                                                                              
 }                                                                                   \
 while(0)
 
+#define SET_BLUE_LED() SET_BIT(BLUE_LED_PORTR, BLUE_LED_PIN_ID)
 #define SET_GREEN_LED() SET_BIT(GREEN_LED_PORTR, GREEN_LED_PIN_ID)
 #define SET_YELLOW_LED() SET_BIT(YELLOW_LED_PORTR, YELLOW_LED_PIN_ID)
 #define SET_RED_LED() SET_BIT(RED_LED_PORTR, RED_LED_PIN_ID)
 #define SET_BUILDT_IN_LED() SET_BIT(BUILT_IN_LED_PORTR, BUILT_IN_LED_PIN_ID)
 
+#define CLEAR_BLUE_LED() CLEAR_BIT(BLUE_LED_PORTR, BLUE_LED_PIN_ID)
 #define CLEAR_GREEN_LED() CLEAR_BIT(GREEN_LED_PORTR, GREEN_LED_PIN_ID)
 #define CLEAR_YELLOW_LED() CLEAR_BIT(YELLOW_LED_PORTR, YELLOW_LED_PIN_ID)
 #define CLEAR_RED_LED() CLEAR_BIT(RED_LED_PORTR, RED_LED_PIN_ID)
 #define CLEAR_BUILDT_IN_LED() CLEAR_BIT(BUILT_IN_LED_PORTR, BUILT_IN_LED_PIN_ID)
 
-#define SET_ONLY_GREEN_LED()    \
-do                              \
-{                               \
-    SET_GREEN_LED();            \
-    CLEAR_YELLOW_LED();         \
-    CLEAR_RED_LED();            \
-}                               \
-while(0)
-
-#define SET_ONLY_YELLOW_LED()   \
-do                              \
-{                               \
-    CLEAR_GREEN_LED();          \
-    SET_YELLOW_LED();           \
-    CLEAR_RED_LED();            \
-}                               \
-while(0)
-
-#define SET_ONLY_RED_LED()  \
-do                          \
-{                           \
-    CLEAR_GREEN_LED();      \
-    CLEAR_YELLOW_LED();     \
-    SET_RED_LED();          \
-}                           \
-while(0)
-
-#define SET_ALL_LEDS()  \
-do                      \
-{                       \
-    SET_GREEN_LED();    \
-    SET_YELLOW_LED();   \
-    SET_RED_LED();      \
-}                       \
-while(0)
-
 #define CLEAR_ALL_LEDS()    \
 do                          \
 {                           \
+    CLEAR_BLUE_LED();       \
     CLEAR_GREEN_LED();      \
     CLEAR_YELLOW_LED();     \
     CLEAR_RED_LED();        \
@@ -214,12 +189,9 @@ ISR(TIMER0_COMPA_vect)
                 CO2_sensor_tl = 0;  // CO2_sensor_tl is the error indicator
                 CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_DETECTING_HIGH_LEVEL;
             }
-            else
+            else if(++CO2_sensor_tl >= CO2_sensor_t_max_err)
             {
-                if(++CO2_sensor_tl == CO2_sensor_t_max_err)
-                {
-                    CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_ERROR;
-                }
+                CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_ERROR;
             }
             break;
 
@@ -229,50 +201,37 @@ ISR(TIMER0_COMPA_vect)
                 CO2_sensor_th = 0;  // CO2_sensor_th is the error indicator
                 CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_COUNTING_TH_DETECTING_LOW_LEVEL;
             }
-            else
+            else if(++CO2_sensor_th >= CO2_sensor_t_max_err)
             {
-                if(++CO2_sensor_th == CO2_sensor_t_max_err)
-                {
-                    CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_ERROR;
-                }
+                CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_ERROR;
             }
             break;
 
         case CO2_SENSOR_MEASUREMENT_COUNTING_TH_DETECTING_LOW_LEVEL:
-            if (++CO2_sensor_th == CO2_sensor_t_max_err)
+            if (++CO2_sensor_th >= CO2_sensor_t_max_err)
             {
                 CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_ERROR;
             }
-            else
+            else if (READ_CO2_SENSOR_PIN() == 0)
             {
-                if (READ_CO2_SENSOR_PIN() == 0)
-                {
-                    CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_COUNTING_TL_DETECTING_HIGH_LEVEL;
-                }
+                CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_COUNTING_TL_DETECTING_HIGH_LEVEL;
             }
             break;
 
         case CO2_SENSOR_MEASUREMENT_COUNTING_TL_DETECTING_HIGH_LEVEL:
-            if (++CO2_sensor_tl == CO2_sensor_t_max_err)
+            if (++CO2_sensor_tl >= CO2_sensor_t_max_err)
             {
                 CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_ERROR;
             }
-            else
+            else if (READ_CO2_SENSOR_PIN() != 0)
             {
-                if (READ_CO2_SENSOR_PIN() != 0)
-                {
-                    CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_DONE;
-                }
+                uint16_t sum = CO2_sensor_th + CO2_sensor_tl;
+                CO2_sensor_measurement_status =
+                    (CO2_sensor_t_min_err < sum && sum < CO2_sensor_t_max_err) ?
+                    CO2_SENSOR_MEASUREMENT_DONE :
+                    CO2_SENSOR_MEASUREMENT_ERROR;
             }
             break;
-    }
-
-    if (CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_DISABLED ||
-        CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_DONE ||
-        CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_ERROR)
-    {
-        // Disable timer0
-        TCCR0B = 0;
     }
 }
 
@@ -293,14 +252,16 @@ int main(void)
     INIT_LED_PINS();
 
     // Initialize timer0
-    OCR0A = 249;  // to have interrupt each 1 ms
-    TIMSK0 = (1 << OCIE0A);  // and enable timer0 interrupt on compare match with OCR0A
+    OCR0A = 249;  // to have interrupt each 1 ms (also needs a prescaler set to 64)
+    TIMSK0 = (1 << OCIE0A);  // and enable timer0 interrupt on compare match with OCR0A (timer0 is disabled)
 
     // Enable all interrupts
     sei();
 
     while(1)
     {
+        MEASUREMENT_PHASE:
+
         // Set state machine to make measurement
         CO2_sensor_measurement_status = CO2_SENSOR_MEASUREMENT_TRIGGERED;
 
@@ -311,62 +272,88 @@ int main(void)
         TCCR0B = TIMER0_PRESCALER_64 | TIMER0_CTC_MODE;
 
         // Wait till the measurement is completed or an error is reported
-        do
+        while(1)
         {
             sleep_cpu();
-        }
-        while (CO2_sensor_measurement_status != CO2_SENSOR_MEASUREMENT_DONE &&
-               CO2_sensor_measurement_status != CO2_SENSOR_MEASUREMENT_ERROR);
+            switch (CO2_sensor_measurement_status)
+            {
+                case CO2_SENSOR_MEASUREMENT_ERROR:
+                    CLEAR_ALL_LEDS();
+                    SET_BUILDT_IN_LED();
+                    goto MEASUREMENT_PHASE;
 
-        // Measurement is done or error is set. Timer0 interrupt have disabled timer0.
-        // No timer0 interrupt can occur from here.
+                case CO2_SENSOR_MEASUREMENT_DONE:
+                    TCCR0B = 0;  // Disable timer0
+                    CLEAR_BUILDT_IN_LED();
+                    goto CALCULATION_PHASE;
 
-        // Check for error
-        if (CO2_sensor_measurement_status == CO2_SENSOR_MEASUREMENT_ERROR)
-        {
-            CLEAR_ALL_LEDS();
-            SET_BUILDT_IN_LED();
-            continue;  // retry to make measurement
-        }
-        else
-        {
-            CLEAR_BUILDT_IN_LED();
+                default:
+                    break;  // always sleep if state machine doesn't work properly
+            }
         }
 
-        // From here CO2_sensor_measurement_status can only be equal to CO2_SENSOR_MEASUREMENT_DONE
+        // Measurement is done and no error is set. Timer0 interrupt has been disabled.
+        CALCULATION_PHASE:
 
         // Calculate CO2 ppm (particles per million), see reference manual for details
-        uint32_t Cppm = (2000 * ((uint32_t)CO2_sensor_th - 2)) / ((uint32_t)CO2_sensor_th + (uint32_t)CO2_sensor_tl - 4);
+        Cppm = (2000 * ((uint32_t)CO2_sensor_th - 2)) / ((uint32_t)CO2_sensor_th + (uint32_t)CO2_sensor_tl - 4);
 
         // Set LEDs accordingly
-        #define LIMIT1 500
-        #define LIMIT2 800
-        #define LIMIT3 1100
-        #define LIMIT4 1400
+        #define LIMIT1 400
+        #define LIMIT2 600
+        #define LIMIT3 800
+        #define LIMIT4 1000
+        #define LIMIT5 1200
+        #define LIMIT6 1400
 
         if (0 <= Cppm && Cppm < LIMIT1)
         {
-            SET_ONLY_GREEN_LED();
+            SET_BLUE_LED();
+            CLEAR_GREEN_LED();
+            CLEAR_YELLOW_LED();
+            CLEAR_RED_LED();
         }
         else if (LIMIT1 <= Cppm && Cppm < LIMIT2)
         {
+            SET_BLUE_LED();
             SET_GREEN_LED();
-            SET_YELLOW_LED();
+            CLEAR_YELLOW_LED();
             CLEAR_RED_LED();
         }
         else if (LIMIT2 <= Cppm && Cppm < LIMIT3)
         {
-            SET_ONLY_YELLOW_LED();
+            CLEAR_BLUE_LED();
+            SET_GREEN_LED();
+            CLEAR_YELLOW_LED();
+            CLEAR_RED_LED();
         }
         else if (LIMIT3 <= Cppm && Cppm < LIMIT4)
         {
+            CLEAR_BLUE_LED();
+            SET_GREEN_LED();
+            SET_YELLOW_LED();
+            CLEAR_RED_LED();
+        }
+        else if (LIMIT4 <= Cppm && Cppm < LIMIT5)
+        {
+            CLEAR_BLUE_LED();
+            CLEAR_GREEN_LED();
+            SET_YELLOW_LED();
+            CLEAR_RED_LED();
+        }
+        else if (LIMIT5 <= Cppm && Cppm < LIMIT6)
+        {
+            CLEAR_BLUE_LED();
             CLEAR_GREEN_LED();
             SET_YELLOW_LED();
             SET_RED_LED();
         }
-        else  // CO2ppm >= LIMIT4
+        else  // CO2ppm >= LIMIT6
         {
-            SET_ONLY_RED_LED();
+            CLEAR_BLUE_LED();
+            CLEAR_GREEN_LED();
+            CLEAR_YELLOW_LED();
+            SET_RED_LED();
         }
 
         // Continue to take measurements
