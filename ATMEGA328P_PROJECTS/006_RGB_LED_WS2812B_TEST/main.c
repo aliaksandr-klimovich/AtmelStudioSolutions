@@ -23,7 +23,7 @@ uint8_t buf[BUF_SIZE];  // 60 * 5 * 3 = 900 bytes
 #define LED_PORT    PORTB
 #define LED_PIN     PB0
 
-void WS2812B_write(uint8_t *pBuf, /*uint8_t port, uint8_t pin*/)
+void WS2812B_write(uint8_t *pBuf /*uint8_t port, uint8_t pin*/ )
 {
     uint16_t i = BUF_SIZE;  // buffer indexing is not used, left bytes count is used instead
     uint8_t byte;           // one byte read out from the buffer
