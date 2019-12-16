@@ -12,6 +12,11 @@
 #else
 #define BUF_SIZE  3
 #endif
+
+// Buffer with next format (based on WS2812B datasheet):
+// (RGB color is encoded in next format, 24 bits (3 bytes), 8 bits per color, starting from green)
+// G7 G6 G5 G4 G3 G2 G1 G0 R7 R6 R5 R4 R3 R2 R1 R0 B7 B6 B5 B4 B3 B2 B1 B0
+// It is multiplied by LED_COUNT and results a buffer size.
 uint8_t buf[BUF_SIZE];  // 60 * 5 * 3 = 900 bytes
 
 #define LED_DDR     DDRB
