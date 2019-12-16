@@ -26,41 +26,41 @@ void WS2812B_write(uint8_t *pBuf)
         "WS2812B_write_0:                   \n"
         //"   ld      %[byte], %a[pBuf]+      \n"  // original placement
         //"   ldi     %[bitMask], 0x80        \n"  // original placement
-        "WS2812B_write_1:                   \n"  //
-        "   sbi     %[port], %[pin]         \n"  // 2t
-        "   nop                             \n"  // 1t
-        "   mov     %[temp], %[bitMask]     \n"  // 1t
-        "   and     %[temp], %[byte]        \n"  // 1t
-        "   brne    WS2812B_write_2         \n"  // 1/2t
-        "   cbi     %[port], %[pin]         \n"  // 2t
-        "   rjmp    WS2812B_write_20        \n"  // 2t; time adjustment
+        "WS2812B_write_1:                   \n"  // 0t   "0"   "1"
+        "   sbi     %[port], %[pin]         \n"  // 2t   :2t   :2t
+        "   nop                             \n"  // 1t   :3t   :3t
+        "   mov     %[temp], %[bitMask]     \n"  // 1t   :4t   :4t
+        "   and     %[temp], %[byte]        \n"  // 1t   :5t   :5t
+        "   brne    WS2812B_write_2         \n"  // 1/2t :6t   :7t
+        "   cbi     %[port], %[pin]         \n"  // 2t   :8t   :
+        "   rjmp    WS2812B_write_20        \n"  // 2t   :10t; time adjustment
         "WS2812B_write_2:                   \n"
-        "   nop                             \n"  // 1t
-        "   nop                             \n"  // 1t
-        "   nop                             \n"  // 1t
+        "   nop                             \n"  // 1t  :     :8t
+        "   nop                             \n"  // 1t  :     :9t
+        "   nop                             \n"  // 1t  :     :10t
         "WS2812B_write_20:                  \n"  // time adjustment
-        "   nop                             \n"
-        "   nop                             \n"
-        "   nop                             \n"
-        "   cbi     %[port], %[pin]         \n"  // 2t
-        "   nop                             \n"
-        "   lsr     %[bitMask]              \n"  // 1t
-        "   cpi     %[bitMask], 1           \n"  // 1t
-        "   brne    WS2812B_write_1         \n"  // 1/2t
-        "   nop                             \n"
+        "   nop                             \n"  // 1t   :11t  :11t
+        "   nop                             \n"  // 1t   :12t  :12t
+        "   nop                             \n"  // 1t   :13t  :13t
+        "   cbi     %[port], %[pin]         \n"  // 2t   :15t  :15t
+        "   nop                             \n"  // 1t   :16t  :16t
+        "   lsr     %[bitMask]              \n"  // 1t   :17t  :17t
+        "   cpi     %[bitMask], 1           \n"  // 1t   :18t  :18t
+        "   brne    WS2812B_write_1         \n"  // 1/2t :20t/19t  :20t/19t
+        "   nop                             \n"  // 1t   :
         "   sbi     %[port], %[pin]         \n"  // 2t
-        "   nop                             \n"
+        "   nop                             \n"  // 1t
         "   mov     %[temp], %[bitMask]     \n"  // 1t
         "   and     %[temp], %[byte]        \n"  // 1t
         "   brne    WS2812B_write_3         \n"  // 1t
         "   cbi     %[port], %[pin]         \n"  // 2t
         "   rjmp    WS2812B_write_30        \n"  // time adjustment
         "WS2812B_write_3:                   \n"
-        "   nop                             \n"
-        "   nop                             \n"
-        "   nop                             \n"
+        "   nop                             \n"  // 1t
+        "   nop                             \n"  // 1t
+        "   nop                             \n"  // 1t
         "WS2812B_write_30:                  \n"  // time adjustment
-        "   nop                             \n"
+        "   nop                             \n"  // 1t
         "   ld      %[byte], %a[pBuf]+      \n"  // 2t; new placement (optimization)
         "   cbi     %[port], %[pin]         \n"  // 2t
         "   ldi     %[bitMask], 0x80        \n"  // 1t; new placement (optimization)
