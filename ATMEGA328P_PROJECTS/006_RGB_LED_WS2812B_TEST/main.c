@@ -1,93 +1,155 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define DEBUG
 
-// LED strip. 60 LEDs per meter, 5 meters.
-#define LED_COUNT   (60U * 5U)
+#ifndef WS2812B_H
+#define WS2812B_H
 
-// LED count * 3 coded colors (Red, Green, Blue)
-#ifndef DEBUG
-#define BUF_SIZE  (LED_COUNT * 3U)
-#else
-#define BUF_SIZE  3
-#endif
+typedef struct __attribute__ ((__packed__)) {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} RGB_t;
 
-// Buffer with next format (based on WS2812B datasheet):
-// (RGB color is encoded in next format, 24 bits (3 bytes), 8 bits per color, starting from green)
-// G7 G6 G5 G4 G3 G2 G1 G0 R7 R6 R5 R4 R3 R2 R1 R0 B7 B6 B5 B4 B3 B2 B1 B0
-// It is multiplied by LED_COUNT and results a buffer size.
-uint8_t buf[BUF_SIZE];  // 60 * 5 * 3 = 900 bytes
+/*
+    Some description...
+
+    r16 - temp
+    r17 - bit mask
+    r18 - red
+    r19 - green
+    r20 - blue
+    r21 - saved status register
+ */
+#define WS2812B_CALL(PORT, PIN, P_BUF, BUF_SIZE) \
+    __asm__ __volatile__ ( \
+        /* preload variables */ \
+        "0:     ldi     r17, 0x80               ; 1     \n" \
+        "       ld      r18, %a[pBuf]+          ; 2     \n" \
+        "       ld      r19, %a[pBuf]+          ; 2     \n" \
+        "       ld      r20, %a[pBuf]+          ; 2     \n" \
+        "       in      r21, __SREG__           ; 1     \n" \
+        "       clt                             ; 1     \n" \
+        "       cli                             ; 1     \n" \
+        /* send green color first 7 bits */ \
+        "1:     sbi     %[port], %[pin]         ; 2         2           \n" \
+        "       nop                             ; 1         3           \n" \
+        "       mov     r16, r17                ; 1         4           \n" \
+        "       and     r16, r19                ; 1         5           \n" \
+        "       brne    2f                      ; 1/2   6       7       \n" \
+        "       cbi     %[port], %[pin]         ; 2     8       -       \n" \
+        "       rjmp    3f                      ; 2     10      -       \n" \
+        "2:     jmp     3f                      ; 3     -       10      \n" \
+        "3:     jmp     4f                      ; 3         13          \n" \
+        "4:     cbi     %[port], %[pin]         ; 2         15          \n" \
+        "       nop                             ; 1         16          \n" \
+        "       lsr     r17                     ; 1         17          \n" \
+        "       cpi     r17, 1                  ; 1         18          \n" \
+        "       brne    1b                      ; 1/2       20/19       \n" \
+        "       nop                             ; 1         20          \n" \
+        /* send green color last bit */ \
+        "       sbi     %[port], %[pin]         ; 2         2           \n" \
+        "       nop                             ; 1         3           \n" \
+        "       mov     r16, r17                ; 1         4           \n" \
+        "       and     r16, r19                ; 1         5           \n" \
+        "       brne    5f                      ; 1/2   6       7       \n" \
+        "       cbi     %[port], %[pin]         ; 2     8       -       \n" \
+        "       rjmp    6f                      ; 2     10      -       \n" \
+        "5:     jmp     6f                      ; 3     -       10      \n" \
+        "6:     jmp     7f                      ; 3         13          \n" \
+        "7:     cbi     %[port], %[pin]         ; 2         15          \n" \
+        "       sbiw    %[bufSize], 1           ; 2         17          \n" \
+        "       brne    8f                      ; 1/2       19/18       \n" \
+        "       set                             ; 1         19          \n" \
+        "8:     ldi     r17, 0x80               ; 1         20          \n" \
+        /* send red color first 7 bits */ \
+        "9:     sbi     %[port], %[pin]         ; 2         2           \n" \
+        "       nop                             ; 1         3           \n" \
+        "       mov     r16, r17                ; 1         4           \n" \
+        "       and     r16, r18                ; 1         5           \n" \
+        "       brne    10f                     ; 1/2   6       7       \n" \
+        "       cbi     %[port], %[pin]         ; 2     8       -       \n" \
+        "       rjmp    11f                     ; 2     10      -       \n" \
+        "10:    jmp     11f                     ; 3     -       10      \n" \
+        "11:    jmp     12f                     ; 3         13          \n" \
+        "12:    cbi     %[port], %[pin]         ; 2         15          \n" \
+        "       nop                             ; 1         16          \n" \
+        "       lsr     r17                     ; 1         17          \n" \
+        "       cpi     r17, 1                  ; 1         18          \n" \
+        "       brne    9b                      ; 1/2       20/19       \n" \
+        "       nop                             ; 1         20          \n" \
+        /* send red color last bit */ \
+        "       sbi     %[port], %[pin]         ; 2         2           \n" \
+        "       nop                             ; 1         3           \n" \
+        "       mov     r16, r17                ; 1         4           \n" \
+        "       and     r16, r18                ; 1         5           \n" \
+        "       brne    13f                     ; 1/2   6       7       \n" \
+        "       cbi     %[port], %[pin]         ; 2     8       -       \n" \
+        "       rjmp    14f                     ; 2     10      -       \n" \
+        "13:    jmp     14f                     ; 3     -       10      \n" \
+        "14:    jmp     15f                     ; 3         13          \n" \
+        "15:    cbi     %[port], %[pin]         ; 2         15          \n" \
+        "       ld      r18, %a[pBuf]+          ; 2         17          \n" \
+        "       ld      r19, %a[pBuf]+          ; 2         19          \n" \
+        "       ldi     r17, 0x80               ; 1         20          \n" \
+        /* send blue color first 7 bits */ \
+        "16:    sbi     %[port], %[pin]         ; 2         2           \n" \
+        "       nop                             ; 1         3           \n" \
+        "       mov     r16, r17                ; 1         4           \n" \
+        "       and     r16, r20                ; 1         5           \n" \
+        "       brne    17f                     ; 1/2   6       7       \n" \
+        "       cbi     %[port], %[pin]         ; 2     8       -       \n" \
+        "       rjmp    18f                     ; 2     10      -       \n" \
+        "17:    jmp     18f                     ; 3     -       10      \n" \
+        "18:    jmp     19f                     ; 3         13          \n" \
+        "19:    cbi     %[port], %[pin]         ; 2         15          \n" \
+        "       nop                             ; 1         16          \n" \
+        "       lsr     r17                     ; 1         17          \n" \
+        "       cpi     r17, 1                  ; 1         18          \n" \
+        "       brne    16b                     ; 1/2       20/19       \n" \
+        "       nop                             ; 1         20          \n" \
+        /* send blue color last bit */ \
+        "       sbi     %[port], %[pin]         ; 2         2           \n" \
+        "       nop                             ; 1         3           \n" \
+        "       mov     r16, r17                ; 1         4           \n" \
+        "       and     r16, r20                ; 1         5           \n" \
+        "       brne    20f                     ; 1/2   6       7       \n" \
+        "       cbi     %[port], %[pin]         ; 2     8       -       \n" \
+        "       rjmp    21f                     ; 2     10      -       \n" \
+        "20:    jmp     21f                     ; 3     -       10      \n" \
+        "21:    ld      r20, %a[pBuf]+          ; 2         12          \n" \
+        "       ldi     r17, 0x80               ; 1         13          \n" \
+        "       cbi     %[port], %[pin]         ; 2         15          \n" \
+        "       nop                             ; 1         16          \n" \
+        /* cycle */ \
+        "       brts    22f                     ; 1/2       17/18       \n" \
+        "       jmp     1b                      ; 3         20          \n" \
+        "       ; sbi ?                         ; 2                     \n" \
+        "22:    out     __SREG__, r21           ; 1                     \n" \
+        : \
+        : [port]    "I" (_SFR_IO_ADDR(PORT)), \
+          [pin]     "I" (PIN), \
+          [pBuf]    "z" (P_BUF), \
+          [bufSize] "w" (BUF_SIZE) \
+        : "r16", "r17", "r18", "r19", "r20", "r21" \
+    )
+
+#define WS2812B_FN(NAME, PORT, PIN) \
+extern void NAME(const RGB_t *rgb, uint16_t bufSize) __attribute__((noinline)); \
+void NAME(const RGB_t *rgb, uint16_t bufSize) { WS2812B_CALL(PORT, PIN, rgb, bufSize); }
+
+#endif /* WS2812B_H */
+
+
 
 #define LED_DDR     DDRB
 #define LED_PORT    PORTB
 #define LED_PIN     PB0
 
-void WS2812B_write(uint8_t *pBuf /*uint8_t port, uint8_t pin*/ )
-{
-    uint16_t i = BUF_SIZE;  // buffer indexing is not used, left bytes count is used instead
-    uint8_t byte;           // one byte read out from the buffer
-    uint8_t bitMask;        // bit mask to check each bit
-    uint8_t temp;           // result for bitwise operation: temp = (byte & mask)
+#define LED_COUNT 2
 
-    // code is compatible only with 16M clk
-    asm volatile (                               // cmd time in ticks : total ticks if bit is 0 : total ticks if bit is 1; comment
-        "   ld      %[byte], %a[pBuf]+      \n"  // 2 :: ; new placement (optimization); byte from the buffer is loaded, buffer pointer is post-incremented
-        "   ldi     %[bitMask], 0x80        \n"  // 1 :: ; new placement (optimization); most left bit in the mask is set 
-        "WS2812B_write_0:                   \n"
-        //"   ld      %[byte], %a[pBuf]+      \n"  // 2 :: ; original placement
-        //"   ldi     %[bitMask], 0x80        \n"  // 1 :: ; original placement
-        "WS2812B_write_1:                   \n"    
-        "   sbi     %[port], %[pin]         \n"  // 2    : 2   : 2  ; regardless the bit status pin is set to high
-        "   nop                             \n"  // 1    : 3   : 3 
-        "   mov     %[temp], %[bitMask]     \n"  // 1    : 4   : 4  ; bit mask is saved to a temporary register
-        "   and     %[temp], %[byte]        \n"  // 1    : 5   : 5  ; bit mask is applied on a byte, result is saved to temp
-        "   brne    WS2812B_write_2         \n"  // 1/2  : 6   : 7  ; if bit is set, jump to label 2 is made
-        "   cbi     %[port], %[pin]         \n"  // 2    : 8   : -  ; bit is 0, pin is set to low and wait
-        "   rjmp    WS2812B_write_20        \n"  // 2    : 10  : -  ; time adjustment
-        "WS2812B_write_2:                   \n"
-        "   nop                             \n"  // 1    : -   : 8  ; bit is 1, wait
-        "   nop                             \n"  // 1    : -   : 9
-        "   nop                             \n"  // 1    : -   : 10
-        "WS2812B_write_20:                  \n"  // time adjustment
-        "   nop                             \n"  // 1    : 11    : 11
-        "   nop                             \n"  // 1    : 12    : 12
-        "   nop                             \n"  // 1    : 13    : 13
-        "   cbi     %[port], %[pin]         \n"  // 2    : 15    : 15 ; regardless the bit status pin is set to low
-        "   nop                             \n"  // 1    : 16    : 16
-        "   lsr     %[bitMask]              \n"  // 1    : 17    : 17 ; logical shift bit mask to the right
-        "   cpi     %[bitMask], 1           \n"  // 1    : 18    : 18 ; compare bit mask with 1 to process last bit separately
-        "   brne    WS2812B_write_1         \n"  // 1/2  : 20/19 : 20/19 ; process first 7 bits, then process last bit
-        "   nop                             \n"  // 1    : 20    : 20 
-        "   sbi     %[port], %[pin]         \n"  // 2    : 22    : 22 ; regardless the bit status pin is set to high
-        "   nop                             \n"  // 1    : 23    : 23 
-        "   mov     %[temp], %[bitMask]     \n"  // 1    : 24    : 24 ; bit mask is saved to a temporary register
-        "   and     %[temp], %[byte]        \n"  // 1    : 25    : 25 ; bit mask is applied on a byte, result is saved to temp
-        "   brne    WS2812B_write_3         \n"  // 1/2  : 26/27 : 26/27 ; if bit is set, jump to label 3 is made
-        "   cbi     %[port], %[pin]         \n"  // 2    : 28    : -     ; bit is 0, pin is set to low and wait
-        "   rjmp    WS2812B_write_30        \n"  // 2    : 30    : -     ; time adjustment
-        "WS2812B_write_3:                   \n"
-        "   nop                             \n"  // 1    : -  : 28
-        "   nop                             \n"  // 1    : -  : 29
-        "   nop                             \n"  // 1    : -  : 30
-        "WS2812B_write_30:                  \n"  // time adjustment
-        "   nop                             \n"  // 1    : 31 : 31
-        "   ld      %[byte], %a[pBuf]+      \n"  // 2    : 33 : 33 ; new placement (optimization); this instruction is moved from the top because of the time constraints, originally nop was here
-        "   cbi     %[port], %[pin]         \n"  // 2    : 35 : 35 ; regardless the bit status pin is set to low
-        "   ldi     %[bitMask], 0x80        \n"  // 1    : 36 : 36 ; new placement (optimization); this instruction is moved from the top because of the time constraints, originally nop was here
-        "   sbiw    %[i], 1                 \n"  // 2    : 38 : 38 ; decrease buffer left counter
-        "   brne    WS2812B_write_0         \n"  // 1/2  : 40 : 40 ; near jump; get next byte from the buffer or finish buffer processing
-        
-        // output parameters:
-        : [i]"+w" (i), [pBuf]"+e"(pBuf), [byte]"+r"(byte), [bitMask]"+r"(bitMask), [temp]"+r"(temp)
-        
-        // input parameters
-        : [port]"I" (_SFR_IO_ADDR(LED_PORT)), [pin]"I" (LED_PIN)
-        
-        // clobbers
-        :
-    );
-}
+WS2812B_FN(WS2812B_A, LED_PORT, LED_PIN);
+RGB_t rgb[LED_COUNT];
 
 int main(void)
 {
@@ -95,20 +157,20 @@ int main(void)
     cli();
 
     // Disable analog comparator
-    ACSR = _BV(ACD);
+    ACSR = (1 << ACD);
 
     // Setup DDR and PORT on pin PB0
-    LED_DDR |= _BV(LED_PIN);  // as output
-    LED_PORT &= ~_BV(LED_PIN);  // low
+    LED_DDR |= (1 << LED_PIN);  // as output
+    LED_PORT &= ~(1 << LED_PIN);  // low
 
-#ifdef DEBUG
-    buf[0] = 0b01000010;
-    buf[1] = 0b11111101;
-    buf[2] = 0b00000000;
-#endif
+    //rgb[0] = (RGB_t){0, 0, 0};
+    //rgb[0] = (RGB_t){0xFF, 0xFF, 0xFF};
+    rgb[0] = (RGB_t){0x55, 0x55, 0x55};
+    rgb[1] = (RGB_t){0xAA, 0xAA, 0xAA};
+    //rgb[0] = (RGB_t){1, 3, 2};
 
     // write to buffer
-    WS2812B_write(buf);
+    WS2812B_A((const RGB_t *) rgb, LED_COUNT);
 
     while (1) {}
 }
