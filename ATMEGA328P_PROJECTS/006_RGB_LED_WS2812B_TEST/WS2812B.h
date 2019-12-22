@@ -13,13 +13,15 @@ typedef struct __attribute__ ((__packed__)) {
 
 /*
     WS2812B driver in a macro implementation.
-    
+
     It is based on the next needs:
     - Possibility to use on any I/O pin.
     - RBG structure can be passed to the driver function, not GRB as defined in the ref.man. driver.
-    
+
     Restrictions:
     - 16 MHz clock
+    - This macro does not make a "reset" delay of above 50 us,
+        so user should assure that enough time has passed since last function (macro) call.
 
     Next register are used:
     r16 - temporary
@@ -157,10 +159,10 @@ typedef struct __attribute__ ((__packed__)) {
 
 /*
     Macro to create a function to use with the desired PORT and PIN
-    For example: 
+    For example:
         WS2812B_CREATE_FUNCTION(WS2812B_PB0, PORTB, PB0);
         // WS2812B_PB0 is the function name that will be available, you can name it as you wish.
-        
+
     Once the function is create, you can use it passing buffer pointer and buffer size variables.
     For example:
         #define BUF_SIZE 60
