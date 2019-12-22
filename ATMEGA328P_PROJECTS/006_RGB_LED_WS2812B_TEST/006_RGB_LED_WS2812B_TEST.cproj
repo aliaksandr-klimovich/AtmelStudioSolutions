@@ -148,10 +148,10 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Assembler1.s">
+    <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="main.c">
+    <Compile Include="WS2812B.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
